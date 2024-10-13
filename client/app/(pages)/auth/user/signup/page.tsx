@@ -32,6 +32,7 @@ export function CardWithForm() {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
 
     useEffect(() => {
         if (password !== confirmPassword) {
@@ -55,10 +56,11 @@ export function CardWithForm() {
                 name,
                 email,
                 password,
+                phoneNumber
             });
             console.log('Signup successful:', response.data);
             if(response.status == 200){
-                router.push("/auth/login");
+                router.push("/auth/user/login");
                 setName('');
                 setEmail('');
                 setPassword('');
@@ -105,6 +107,18 @@ export function CardWithForm() {
                         />
                     </div>
                     <div className="flex flex-col space-y-1.5">
+                        <Label htmlFor="tel" className="sm:w-32 md:w-48 lg:w-64 xl:w-80">
+                            Phone Number
+                        </Label>
+                        <Input
+                            id="phoneNumber"
+                            placeholder="Phone Number"
+                            className="sm:w-32 md:w-48 lg:w-64 xl:w-80"
+                            value={phoneNumber}
+                            onChange={(e) => setPhoneNumber(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex flex-col space-y-1.5">
                         <Label htmlFor="password" className="sm:w-32 md:w-48 lg:w-64 xl:w-80">
                             Password
                         </Label>
@@ -148,7 +162,7 @@ export function CardWithForm() {
                 </Button>
                 <div className="mt-2 text-sm">
                     Already have an Account?{' '}
-                    <Link href="/auth/login" className="text-blue-500 hover:underline">
+                    <Link href="/auth/user/login" className="text-blue-500 hover:underline">
                         Login
                     </Link>
                 </div>
