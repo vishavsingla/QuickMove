@@ -1,19 +1,20 @@
 import { Router } from 'express';
-import { adminLoginController, adminSignUpController } from '../../controllers/authentication/admin.auth.controller';
-import { logOutController, refreshAccessTokenController } from '../../controllers/authentication/user.auth.controller';
-import { roleMiddleware } from '../../middlewares/roleMiddleware';
+import { authMiddleware } from '../../middlewares/authMiddleware';
+import {
+  driverSignUpController,
+  driverLoginController,
+  getDriverById,
+  getAllDrivers,
+  addVehicleByDriver,
+} from '../../controllers/authentication/driver.auth.controller';
 
 
-const AdminAuthRouter = Router();
+const router = Router();
 
-AdminAuthRouter.post('/signup', adminSignUpController);
-AdminAuthRouter.post('/login', adminLoginController);
-AdminAuthRouter.post('/logout', logOutController);
-AdminAuthRouter.post('/refresh-token', refreshAccessTokenController);
+router.post('/vehicle', authMiddleware, addVehicleByDriver);
+router.post('/register', driverSignUpController);
+router.post('/login', driverLoginController);
+router.get('/:id', authMiddleware, getDriverById);
+router.get('/', authMiddleware, getAllDrivers);
 
-AdminAuthRouter.use(roleMiddleware(['ADMIN'])); // Only admins can access following routes
-
-// Define other admin-only routes here
-AdminAuthRouter.get('/dashboard', (req, res) => res.json({ message: "Admin dashboard" }));
-
-export default AdminAuthRouter;
+export default router;
