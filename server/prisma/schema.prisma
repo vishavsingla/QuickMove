@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -22,20 +22,40 @@ model User {
   bookings           Booking[]           @relation("UserBookings")
   Driver             Driver?
   Admin              Admin?
+  Notification       Notification[]
+}
+
+model Vehicle {
+  id            String   @id @default(cuid())
+  make          String
+  model         String
+  year          Int
+  licensePlate  String
+  driverId      String
+  driver        Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  vehicleType   VehicleType
+  status        String   @default("PENDING")
 }
 
 model Driver {
-  id            String    @id @default(cuid())
-  userId        String    @unique
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  phoneNumber   String              @unique
+  id            String     @id @default(cuid())
+  userId        String     @unique
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phoneNumber   String     @unique
   licenseNumber String
-  vehicleType   VehicleType
-  vehicleNumber String
-  isAvailable   Boolean   @default(true)
+  isAvailable   Boolean    @default(true)
   bankAccNo     String?
   ifscCode      String?
-  bookings      Booking[] @relation("DriverBookings")
+  bookings      Booking[]  @relation("DriverBookings")
+  vehicles      Vehicle[]  
+  Notification  Notification[]
+  city          String
+  area          String
+  currentLat    Float?
+  currentLng    Float?
+  status        String     @default("PENDING") 
 }
 
 enum VehicleType {
@@ -46,7 +66,6 @@ enum VehicleType {
   SMALL_TRUCK
   BIG_TRUCK
 }
-
 
 model Admin {
   id     String @id @default(cuid())
@@ -76,7 +95,7 @@ model VerificationToken {
 }
 
 model Booking {
-  id              String        @id @default(cuid())
+  id              String         @id @default(cuid())
   pickupLocation  String
   pickupLat       Float
   pickupLng       Float
@@ -84,13 +103,31 @@ model Booking {
   dropoffLat      Float
   dropoffLng      Float
   estimatedCost   Float
-  status          BookingStatus @default(PENDING)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  estimatedDistance Float
+  status          BookingStatus  @default(PENDING)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
   userId          String
-  user            User          @relation("UserBookings", fields: [userId], references: [id], onDelete: Cascade)
+  user            User           @relation("UserBookings", fields: [userId], references: [id], onDelete: Cascade)
   driverId        String?
-  driver          Driver?       @relation("DriverBookings", fields: [driverId], references: [id], onDelete: SetNull)
+  driver          Driver?        @relation("DriverBookings", fields: [driverId], references: [id], onDelete: SetNull)
+  Notification    Notification[]
+  scheduledTime      DateTime? 
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String 
+  message   String
+  userId    String? 
+  driverId  String? 
+  bookingId String? 
+  createdAt DateTime @default(now())
+  isRead    Boolean  @default(false)
+
+  user    User?    @relation(fields: [userId], references: [id])
+  driver  Driver?  @relation(fields: [driverId], references: [id])
+  booking Booking? @relation(fields: [bookingId], references: [id])
 }
 
 enum Role {
@@ -101,7 +138,9 @@ enum Role {
 
 enum BookingStatus {
   PENDING
+  ACCEPTED
   IN_PROGRESS
   COMPLETED
+  REJECTED
   CANCELLED
 }

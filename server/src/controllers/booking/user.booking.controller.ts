@@ -2,11 +2,15 @@ import axios from 'axios';
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 
+
 const prisma = new PrismaClient();
 
-const createBooking = async (req: Request, res: Response): Promise<Response> => {
+import { VehicleType } from '@prisma/client';
+import { getSocketIO } from '../../socket';
+
+export const createBooking = async (req: Request, res: Response): Promise<Response> => {
 	try {
-		const { userId, pickupLocation, dropoffLocation, vehicleType } = req.body;
+		const { userId, pickupLocation, dropoffLocation, vehicleType }: { userId: string, pickupLocation: string, dropoffLocation: string, vehicleType: VehicleType } = req.body;
 
 		// Validate input
 		if (!pickupLocation || !dropoffLocation || !vehicleType) {
@@ -33,6 +37,7 @@ const createBooking = async (req: Request, res: Response): Promise<Response> => 
 				pickupLat: pickupLatLng.lat,
 				pickupLng: pickupLatLng.lng,
 				dropoffLocation,
+				estimatedDistance: distance,
 				dropoffLat: dropoffLatLng.lat,
 				dropoffLng: dropoffLatLng.lng,
 				estimatedCost,
@@ -41,13 +46,31 @@ const createBooking = async (req: Request, res: Response): Promise<Response> => 
 		});
 
 		// Notify nearby drivers
-		notifyNearbyDrivers(pickupLatLng, vehicleType);
+		notifyNearbyDrivers(booking.id, vehicleType);
 
 		return res.status(200).json({ message: "Booking created successfully", booking });
 	} catch (err: any) {
 		return res.status(500).json({ message: "Internal server error", error: err.message });
 	}
 };
+
+
+export const getBookingDetails = async (req: Request, res: Response) => {
+	const { bookingId } = req.params;
+  
+	try {
+	  const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
+  
+	  if (!booking) {
+		return res.status(404).json({ message: 'Booking not found' });
+	  }
+  
+	  res.status(200).json(booking);
+	} catch (error:any) {
+	  res.status(500).json({ message: 'Error fetching booking details', error: error.message });
+	}
+  };
+  
 
 // Helper function to get lat/lng from an address
 const getLatLngFromAddress = async (address: string, apiKey: string) => {
@@ -65,7 +88,7 @@ const getLatLngFromAddress = async (address: string, apiKey: string) => {
 };
 
 // Calculate distance between two coordinates (in km)
-const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+export const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
 	const R = 6371; // Radius of the Earth in km
 	const dLat = (lat2 - lat1) * (Math.PI / 180);
 	const dLng = (lng2 - lng1) * (Math.PI / 180);
@@ -77,6 +100,22 @@ const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: numbe
 	const distance = R * c;
 	return distance;
 };
+
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+
+export const calculateMapDistance = async (originLat: number, originLng: number, destLat: number, destLng: number) => {
+  const response = await axios.get(
+    `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${originLat},${originLng}&destinations=${destLat},${destLng}&key=${GOOGLE_MAPS_API_KEY}`
+  );
+
+  if (response.data.status === 'OK') {
+    const distance = response.data.rows[0].elements[0].distance.value; // distance in meters
+    return distance / 1000; // Convert to kilometers
+  } else {
+    throw new Error('Error calculating distance');
+  }
+};
+
 
 // Calculate cost based on distance and vehicle type
 const calculateCostWithGoogleMaps = async (pickupLat: number, pickupLng: number, dropoffLat: number, dropoffLng: number, vehicleType: string) => {
@@ -112,7 +151,7 @@ const calculateCostWithGoogleMaps = async (pickupLat: number, pickupLng: number,
     }
   };
 
-const cancelBooking = async (req: Request, res: Response): Promise<Response> => {
+export const cancelBooking = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { bookingId } = req.body;
     const booking = await prisma.booking.update({
@@ -126,7 +165,7 @@ const cancelBooking = async (req: Request, res: Response): Promise<Response> => 
   }
 };
 
-const callDriver = async (req: Request, res: Response): Promise<Response> => {
+export const callDriver = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { bookingId } = req.body;
     const booking = await prisma.booking.findUnique({
@@ -144,9 +183,87 @@ const callDriver = async (req: Request, res: Response): Promise<Response> => {
   }
 };
 
+
+export const notifyNearbyDrivers = async (bookingId: string, vehicleType: VehicleType) => {
+	// Find drivers based on their current location and vehicle type
+	if (!bookingId) {
+	  throw new Error('Booking ID is required');
+	}
+	if(!vehicleType) {
+		throw new Error('VehicleType is required');
+	}
+	
+	const nearbyDrivers = await prisma.driver.findMany({
+	  where: {
+		// You can add location-based filtering logic here (e.g., drivers within 5km radius)
+		isAvailable: true
+	  }
+	});
+  
+	// Fetch booking details
+	const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
+	
+	if (!booking) {
+	  throw new Error('Booking not found');
+	}
+
+
+	// Notify drivers using Socket.IO and create notification entries in DB
+	for (const driver of nearbyDrivers) {
+	  const notificationMessage = `New booking available: Pickup at ${booking.pickupLocation} (Estimated ${booking.estimatedDistance} km). Estimated fare: ₹${booking.estimatedCost}`;
+  
+	  // Save notification in DB
+	  await prisma.notification.create({
+		data: {
+		  type: 'Booking Request',
+		  message: notificationMessage,
+		  driverId: driver.id,
+		  bookingId: booking.id,
+		}
+	  });
+  
+	  // Emit the real-time notification via Socket.IO
+	  const io = getSocketIO();
+	  
+	  io.to(driver.id).emit('new-booking', {
+		message: notificationMessage,
+		bookingId: booking.id,
+		estimatedCost: booking.estimatedCost,
+		pickupLocation: booking.pickupLocation,
+		estimatedDistance: booking.estimatedDistance
+	  });
+	}
+  };
   
 
-// Notify nearby drivers (dummy function for now)
-const notifyNearbyDrivers = (pickupLatLng: { lat: number, lng: number }, vehicleType: string) => {
-	// Logic to notify drivers with the given vehicleType within a certain range (e.g., 5km radius)
-};
+  export const scheduleBooking = async (req: Request, res: Response) => {
+	try {
+	  const { userId, pickupLocation, dropoffLocation, vehicleType, scheduledTime } = req.body;
+  
+	  const pickupLatLng = await getLatLngFromAddress(pickupLocation, process.env.GOOGLE_MAPS_API_KEY as string);
+	  const dropoffLatLng = await getLatLngFromAddress(dropoffLocation, process.env.GOOGLE_MAPS_API_KEY as string);
+  
+	  const distance = calculateDistance(pickupLatLng.lat, pickupLatLng.lng, dropoffLatLng.lat, dropoffLatLng.lng);
+	  const estimatedCost = await calculateCostWithGoogleMaps(pickupLatLng.lat, pickupLatLng.lng, dropoffLatLng.lat, dropoffLatLng.lng, vehicleType);
+  
+	  const booking = await prisma.booking.create({
+		data: {
+		  userId,
+		  pickupLocation,
+		  pickupLat: pickupLatLng.lat,
+		  pickupLng: pickupLatLng.lng,
+		  dropoffLocation,
+		  dropoffLat: dropoffLatLng.lat,
+		  dropoffLng: dropoffLatLng.lng,
+		  estimatedDistance: distance,
+		  estimatedCost,
+		  status: 'PENDING',
+		  scheduledTime: new Date(scheduledTime),
+		},
+	  });
+  
+	  return res.status(201).json({ message: "Booking scheduled successfully", booking });
+	} catch (error) {
+	  return res.status(500).json({ message: "Error scheduling booking", error });
+	}
+  };
