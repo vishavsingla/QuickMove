@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDispatch } from 'react-redux';
-import { setSessionToken } from '../../../redux/sessionTokenSlice';
+import { setSessionToken } from '../../../../redux/sessionTokenSlice';
 
 import axios from "axios";
 
@@ -108,7 +108,7 @@ export default function CardWithForm() {
                 </Button>
                 <div className="mt-2">
                     Don't have an account?{" "}
-                    <Link href="/auth/signup" className="text-blue-500 hover:underline">
+                    <Link href="/auth/user/signup" className="text-blue-500 hover:underline">
                         Sign up
                     </Link>
                 </div>
