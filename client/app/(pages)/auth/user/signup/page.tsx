@@ -60,7 +60,7 @@ export function CardWithForm() {
             });
             console.log('Signup successful:', response.data);
             if(response.status == 200){
-                router.push("/auth/user/login");
+                router.push("/auth/login");
                 setName('');
                 setEmail('');
                 setPassword('');
@@ -162,7 +162,7 @@ export function CardWithForm() {
                 </Button>
                 <div className="mt-2 text-sm">
                     Already have an Account?{' '}
-                    <Link href="/auth/user/login" className="text-blue-500 hover:underline">
+                    <Link href="/auth/login" className="text-blue-500 hover:underline">
                         Login
                     </Link>
                 </div>

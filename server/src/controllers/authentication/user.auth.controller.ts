@@ -12,7 +12,6 @@ const signUpController = async (req: Request, res: Response): Promise<Response> 
 	try {
 		const { name, email, password, phoneNumber } = req.body;
 		if (!email || !password || !name || !phoneNumber) {
-
 			return res.status(203).json({ message: "Please provide all required fields" });
 		}
 
@@ -54,7 +53,7 @@ const signUpController = async (req: Request, res: Response): Promise<Response> 
 const loginController = async (req: Request, res: Response): Promise<Response> => {
 	try {
 		const { email, password } = req.body;
-		0
+		
 		const existingUser = await prisma.user.findUnique({
 			where: {
 				email,
@@ -118,7 +117,7 @@ const fetchUserFromSession = async (req: Request, res: Response) => {
     const sessionToken = extractSessionToken(req, res);
     
     if (!sessionToken) {
-        return null;  // or handle the error appropriately
+        return null; 
     }
     
     const session = await prisma.session.findUnique({
@@ -126,11 +125,11 @@ const fetchUserFromSession = async (req: Request, res: Response) => {
             sessionToken: sessionToken,
         },
         include: {
-            user: true, // This fetches the related User model
+            user: true, 
         },
     });
 
-    return session ? session.user : null;  // Return the user associated with the session
+    return session ? session.user : null; 
 };
 
 
@@ -216,7 +215,6 @@ const generateAccessToken = (data: any): string => {
 		return token;
 	} catch (e: any) {
 		throw new Error("Failed to generate refresh token: " + e.message);
-
 	}
 };
 
@@ -254,9 +252,11 @@ const checkValidSession = async (req: Request, res: Response): Promise<Response>
 };
 
 const getUserDetails = async (req: Request, res: Response): Promise<Response> => {
-	const sessionToken = extractSessionToken(req, res);
+	console.log(req.params)
+	const sessionToken = req.params.sessionToken || extractSessionToken(req, res);
+	console.log(sessionToken)
 	try {
-		if (!sessionToken) return res.status(401).json({ error: "Not Logged In" });
+		if (!sessionToken) return res.status(200).json({ error: "Not Logged In" });
 		const thisSession: any = await prisma.session.findUnique({
 			where: { sessionToken: sessionToken },
 		});

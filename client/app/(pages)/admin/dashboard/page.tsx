@@ -1,18 +1,43 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { CheckCircle, XCircle, UserCheck, Truck } from 'lucide-react';
+import axios from 'axios';
 
+interface Driver {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  phoneNumber: string;
+  licenseNumber: string;
+  vehicleType: string;
+  vehicleMake: string;
+  vehicleModel: string;
+  vehicleYear: string;
+  licensePlate: string;
+  city: string;
+  area: string;
+  status: string;
+  id: string;
+}
 const AdminDashboard = () => {
-  const [drivers, setDrivers] = useState([
-    { id: 1, name: 'John Doe', status: 'Pending' },
-    { id: 2, name: 'Jane Smith', status: 'Approved' },
-  ]);
+  
+  
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await axios.get('http://localhost:5000/admin/drivers', { withCredentials: true });
+      setDrivers(response.data);  
+    };
+    fetchData();
+  }, []);
 
   const [vehicles, setVehicles] = useState([
     { id: 1, type: 'Car', licensePlate: 'ABC123', status: 'Pending' },
@@ -26,7 +51,11 @@ const AdminDashboard = () => {
     { area: 'West', bookings: 90 },
   ];
 
-  const handleDriverApproval = (driverId: number, newStatus: string) => {
+  const handleDriverApproval = async(driverId: string, newStatus: string) => {
+    const response = await axios.post('http://localhost:5000/admin/drivers/approve', {
+      driverId,
+      newStatus,
+    }, { withCredentials: true });
     setDrivers(drivers.map(driver => 
       driver.id === driverId ? { ...driver, status: newStatus } : driver
     ));
@@ -64,6 +93,9 @@ const AdminDashboard = () => {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>License Number</TableHead>
+                    <TableHead>Vehicle Number</TableHead>
+                    <TableHead>Vehicle Type</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -72,12 +104,15 @@ const AdminDashboard = () => {
                     <TableRow key={driver.id}>
                       <TableCell>{driver.name}</TableCell>
                       <TableCell>{driver.status}</TableCell>
+                      <TableCell>{driver.vehicleType}</TableCell>
+                      <TableCell>{driver.licenseNumber}</TableCell>
+                      <TableCell>{driver.licensePlate}</TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
-                          <Button variant="outline" size="sm" onClick={() => handleDriverApproval(driver.id, 'Approved')}>
+                          <Button variant="outline" size="sm" onClick={() => handleDriverApproval(driver.id, 'APPROVED')}>
                             <CheckCircle className="w-4 h-4 mr-2" />Approve
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => handleDriverApproval(driver.id, 'Rejected')}>
+                          <Button variant="outline" size="sm" onClick={() => handleDriverApproval(driver.id, 'REJECTED')}>
                             <XCircle className="w-4 h-4 mr-2" />Reject
                           </Button>
                         </div>

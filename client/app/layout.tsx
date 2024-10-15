@@ -5,6 +5,9 @@ import ToggleTheme from "./components/ToggleTheme";
 import { ThemeProvider } from "./components/theme-provider";
 import StoreProvider from './StoreProvider';
 import {SocketProvider} from "@/context/SockerProvider";
+import { cookies } from 'next/headers';
+import { getCookie } from 'cookies-next';
+const sessionToken = getCookie('sessionToken', {cookies});
 
 const inter = Inter({ subsets: ["latin"] });
 

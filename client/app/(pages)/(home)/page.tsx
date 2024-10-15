@@ -23,13 +23,13 @@ export default function Home() {
                         <Truck className="mr-2" /> LogiTrack
                     </h1>
                     <div>
-                        <Button onClick={() => router.push('/auth/user/login')} variant="outline" className="mr-2">
+                        <Button onClick={() => router.push('/auth/login')} variant="outline" className="mr-2">
                             <UserCircle className="mr-2" /> User Login
                         </Button>
-                        <Button onClick={() => router.push('/auth/driver/login')} variant="outline" className="mr-2">
+                        <Button onClick={() => router.push('/auth/login')} variant="outline" className="mr-2">
                             <Truck className="mr-2" /> Driver Login
                         </Button>
-                        <Button onClick={() => router.push('/auth/admin/login')} variant="outline">
+                        <Button onClick={() => router.push('/auth/login')} variant="outline">
                             <Briefcase className="mr-2" /> Admin Login
                         </Button>
                     </div>
