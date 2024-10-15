@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { getCookie, setCookie } from "cookies-next";
+import { getCookie, hasCookie, setCookie } from "cookies-next";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -15,11 +15,8 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDispatch } from 'react-redux';
-import { setSessionToken } from '../../../../redux/sessionTokenSlice';
-
 import axios from "axios";
 
-// import { cookieStore } from "../../../cookie";
 
 export default function CardWithForm() {
     const dispatch = useDispatch();
@@ -44,7 +41,18 @@ export default function CardWithForm() {
             }
             
             else{
-                router.push("/");
+                const sessionToken = response.data.session.sessionToken;
+                var st = hasCookie('sessionToken');
+                console.log(st);
+                const res = await axios.get(`http://localhost:5000/auth/user/check-session/${sessionToken}`);
+                const role = res.data.role;
+                if(role === "USER"){
+                    router.push("/");
+                }else if(role === "DRIVER"){
+                    router.push("/driver/dashboard");
+                }else{
+                    router.push("/admin/dashboard");
+                }
                 setEmail('');
                 setError('');
                 setPassword("");

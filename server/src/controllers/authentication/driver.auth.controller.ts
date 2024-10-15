@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 
 export const driverSignUpController = async (req: Request, res: Response) => {
   try {
-    const { name, email, password, licenseNumber, vehicleType, vehicleNumber, phoneNumber, city, area } = req.body;
+    const { name, email, password, licenseNumber, vehicleType, licensePlate, phoneNumber, city, area } = req.body;
 
     const existingDriver = await prisma.user.findUnique({ where: { email } });
     if (existingDriver) return res.status(400).json({ message: "Driver already exists" });
@@ -22,10 +22,21 @@ export const driverSignUpController = async (req: Request, res: Response) => {
         phoneNumber: phoneNumber, 
         Driver: {
           create: {
+            name,
+            email,
+            hashedPassword,
             licenseNumber,
             phoneNumber,
             city,
+            vehicleType,
+            licensePlate,
             area,
+            vehicles: {
+              create: {
+                vehicleType,
+                licensePlate,
+              },
+            },
           },
         },
       },

@@ -26,36 +26,41 @@ model User {
 }
 
 model Vehicle {
-  id            String   @id @default(cuid())
-  make          String
-  model         String
-  year          Int
-  licensePlate  String
-  driverId      String
-  driver        Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  vehicleType   VehicleType
-  status        String   @default("PENDING")
+  id           String      @id @default(cuid())
+  make         String?
+  model        String?
+  year         Int?
+  licensePlate String
+  driverId     String
+  driver       Driver      @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  vehicleType  VehicleType
+  status       String      @default("PENDING")
 }
 
 model Driver {
-  id            String     @id @default(cuid())
-  userId        String     @unique
-  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  phoneNumber   String     @unique
-  licenseNumber String
-  isAvailable   Boolean    @default(true)
-  bankAccNo     String?
-  ifscCode      String?
-  bookings      Booking[]  @relation("DriverBookings")
-  vehicles      Vehicle[]  
-  Notification  Notification[]
-  city          String
-  area          String
-  currentLat    Float?
-  currentLng    Float?
-  status        String     @default("PENDING") 
+  id             String         @id @default(cuid())
+  userId         String         @unique
+  name           String
+  hashedPassword String
+  email          String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phoneNumber    String         @unique
+  licenseNumber  String
+  isAvailable    Boolean        @default(true)
+  bankAccNo      String?
+  ifscCode       String?
+  bookings       Booking[]      @relation("DriverBookings")
+  vehicles       Vehicle[]
+  Notification   Notification[]
+  city           String
+  area           String
+  currentLat     Float?
+  currentLng     Float?
+  status         String         @default("PENDING")
+  vehicleType    VehicleType
+  licensePlate  String
 }
 
 enum VehicleType {
@@ -95,33 +100,33 @@ model VerificationToken {
 }
 
 model Booking {
-  id              String         @id @default(cuid())
-  pickupLocation  String
-  pickupLat       Float
-  pickupLng       Float
-  dropoffLocation String
-  dropoffLat      Float
-  dropoffLng      Float
-  estimatedCost   Float
+  id                String         @id @default(cuid())
+  pickupLocation    String
+  pickupLat         Float
+  pickupLng         Float
+  dropoffLocation   String
+  dropoffLat        Float
+  dropoffLng        Float
+  estimatedCost     Float
   estimatedDistance Float
-  status          BookingStatus  @default(PENDING)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  userId          String
-  user            User           @relation("UserBookings", fields: [userId], references: [id], onDelete: Cascade)
-  driverId        String?
-  driver          Driver?        @relation("DriverBookings", fields: [driverId], references: [id], onDelete: SetNull)
-  Notification    Notification[]
-  scheduledTime      DateTime? 
+  status            BookingStatus  @default(PENDING)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  userId            String
+  user              User           @relation("UserBookings", fields: [userId], references: [id], onDelete: Cascade)
+  driverId          String?
+  driver            Driver?        @relation("DriverBookings", fields: [driverId], references: [id], onDelete: SetNull)
+  Notification      Notification[]
+  scheduledTime     DateTime?
 }
 
 model Notification {
   id        String   @id @default(cuid())
-  type      String 
+  type      String
   message   String
-  userId    String? 
-  driverId  String? 
-  bookingId String? 
+  userId    String?
+  driverId  String?
+  bookingId String?
   createdAt DateTime @default(now())
   isRead    Boolean  @default(false)
 

@@ -14,7 +14,7 @@ UserAuthRouter.post('/login', loginController);
 UserAuthRouter.post('/logout/:id?', logOutController);
 UserAuthRouter.post('/refresh-token', refreshAccessTokenController);
 // UserAuthRouter.get('/check-session/:id?', authMiddleware, checkValidSession);
-UserAuthRouter.get('/check-session/:id?', checkValidSession);
+UserAuthRouter.get('/check-session/:sessionToken?', getUserDetails);
 UserAuthRouter.get('/user/:id?', getUserDetails);
 
 export default UserAuthRouter; 

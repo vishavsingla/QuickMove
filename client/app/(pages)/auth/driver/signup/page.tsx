@@ -9,6 +9,7 @@ import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Link from 'next/link';
+import axios from 'axios';
 
 const DriverSignupForm = () => {
   const router = useRouter();
@@ -63,11 +64,38 @@ const handleSelectChange: SelectChangeHandler = (value, field) => {
       setError('Passwords do not match');
       return;
     }
-    // Here you would call your API to handle driver signup
-    console.log('Driver Signup data:', formData);
-    // Redirect to driver login page after successful signup
-    router.push('/auth/driver/login');
+    try {
+      console.log('Driver Signup data:', formData);
+      const response = await axios.post('http://localhost:5000/auth/driver/register', formData);
+      console.log('Signup successful:', response);
+      if(response.status == 201){
+          router.push("/auth/login");
+          setFormData({
+            name: '',
+            email: '',
+            password: '',
+            confirmPassword: '',
+            phoneNumber: '',
+            licenseNumber: '',
+            vehicleType: '',
+            vehicleMake: '',
+            vehicleModel: '',
+            vehicleYear: '',
+            licensePlate: '',
+            city: '',
+            area: '',
+          });
+          
+      }
+  } catch (error:any) {
+      console.error('Signup failed:', error.response.data);
+      setError(error.response.data.message || 'An error occurred during signup');
+  }
+    
   };
+
+
+  
 
   return (
     <div className="m-10">

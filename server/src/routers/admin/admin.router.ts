@@ -5,7 +5,6 @@ import {
   logout,
   getAllDrivers,
   approveDriver,
-  rejectDriver,
   addVehicle,
   updateVehicle,
   deleteVehicle,
@@ -30,9 +29,8 @@ router.post('/signup', signup);
 router.post('/login', login);
 router.post('/logout', logout);
 
-router.get('/drivers', roleMiddleware(['ADMIN']), getAllDrivers);
-router.post('/drivers/approve', roleMiddleware(['ADMIN']), approveDriver);
-router.post('/drivers/reject', roleMiddleware(['ADMIN']), rejectDriver);
+router.get('/drivers', getAllDrivers);
+router.post('/drivers/approve', approveDriver);
 
 router.post('/vehicles/approve', roleMiddleware(['ADMIN']), approveVehicle);
 router.post('/vehicles', roleMiddleware(['ADMIN']), addVehicle);

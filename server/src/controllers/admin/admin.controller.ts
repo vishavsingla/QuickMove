@@ -76,11 +76,11 @@ export const getAllDrivers = async (req: Request, res: Response) => {
 // Approve Driver
 export const approveDriver = async (req: Request, res: Response) => {
   try {
-    const { driverId } = req.body;
+    const { driverId, newStatus } = req.body;
 
     const driver = await prisma.driver.update({
       where: { id: driverId },
-      data: { status: 'APPROVED', isAvailable: true },
+      data: { status: newStatus, isAvailable: true },
     });
 
     res.status(200).json({ message: 'Driver approved', driver });
@@ -105,21 +105,6 @@ export const approveVehicle = async (req: Request, res: Response) => {
   }
 };
 
-// Reject Driver
-export const rejectDriver = async (req: Request, res: Response) => {
-  try {
-    const { driverId } = req.body;
-
-    const driver = await prisma.driver.update({
-      where: { id: driverId },
-      data: { isAvailable: false },
-    });
-
-    res.status(200).json({ message: 'Driver rejected', driver });
-  } catch (error) {
-    res.status(500).json({ error: 'Error rejecting driver' });
-  }
-};
 
 // Add a Vehicle to Fleet
 export const addVehicle = async (req: Request, res: Response) => {
