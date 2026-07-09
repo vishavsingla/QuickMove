@@ -1,2 +1,30 @@
-./server/.env
-.vscode
+# dependencies
+node_modules/
+**/node_modules/
+
+# env
+.env
+.env.local
+.env.*.local
+**/.env
+!**/.env.example
+
+# build output
+dist/
+.next/
+out/
+build/
+coverage/
+
+# logs
+*.log
+npm-debug.log*
+
+# editor / os
+.vscode/
+.idea/
+.DS_Store
+
+# test artifacts
+playwright-report/
+test-results/
