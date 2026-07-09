@@ -6,6 +6,7 @@ import { AuthProvider } from "@/context/AuthProvider";
 import { SocketProvider } from "@/context/SocketProvider";
 import { Toaster } from "@/components/ui/toaster";
 import { Navbar } from "@/components/Navbar";
+import { PushNotificationSetup } from "@/components/PushNotificationSetup";
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
@@ -22,6 +23,7 @@ export function Providers({ children }: { children: ReactNode }) {
             <main className="flex-1">{children}</main>
           </div>
           <Toaster />
+          <PushNotificationSetup />
         </SocketProvider>
       </AuthProvider>
     </ThemeProvider>

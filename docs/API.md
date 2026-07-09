@@ -94,10 +94,13 @@ Bookings accept optional `couponCode` on `POST /api/bookings`. Payment intents c
 | GET | `/` | Message history for booking |
 
 ## Notifications — `/api/notifications` (any)
-| Method | Path | Notes |
-|---|---|---|
-| GET | `/` | → `{ notifications[], unread }` |
-| POST | `/:id/read` | Mark one, or `all` |
+| Method | Path | Body | Notes |
+|---|---|---|---|
+| GET | `/` | – | → `{ notifications[], unread }` |
+| GET | `/push/status` | – | → `{ enabled, subscriptions }` |
+| POST | `/push/subscribe` | `{ endpoint, keys? }` | Save web push stub subscription |
+| POST | `/push/unsubscribe` | `{ endpoint }` | Remove subscription |
+| POST | `/:id/read` | – | Mark one, or `all` |
 
 ## Health & metrics
 | Method | Path | Notes |

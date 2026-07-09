@@ -271,6 +271,20 @@ export const api = {
     request<{ message: string }>(`/api/notifications/${id}/read`, {
       method: "POST",
     }),
+  pushStatus: () =>
+    request<{ enabled: boolean; subscriptions: number }>(
+      "/api/notifications/push/status"
+    ),
+  subscribePush: (endpoint: string, keys?: { p256dh?: string; auth?: string }) =>
+    request<{ message: string }>("/api/notifications/push/subscribe", {
+      method: "POST",
+      body: JSON.stringify({ endpoint, keys }),
+    }),
+  unsubscribePush: (endpoint: string) =>
+    request<{ message: string }>("/api/notifications/push/unsubscribe", {
+      method: "POST",
+      body: JSON.stringify({ endpoint }),
+    }),
 
   // user profile & addresses
   getProfile: () => request<{ user: any }>("/api/user/profile"),
