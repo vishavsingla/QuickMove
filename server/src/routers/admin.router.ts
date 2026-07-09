@@ -6,6 +6,7 @@ import {
   listUsers,
   stats,
 } from "../controllers/admin.controller";
+import { reviewKyc } from "../controllers/kyc.controller";
 import {
   listCoupons,
   createCoupon,
@@ -19,6 +20,7 @@ router.use(requireAuth, requireRole("ADMIN"));
 
 router.get("/drivers", listDrivers);
 router.post("/drivers/:id/status", setDriverStatus);
+router.post("/drivers/:id/kyc", reviewKyc);
 router.get("/bookings", listBookings);
 router.get("/users", listUsers);
 router.get("/stats", stats);

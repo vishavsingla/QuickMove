@@ -116,6 +116,16 @@ function AdminInner() {
     load();
   };
 
+  const reviewKyc = async (id: string, status: "VERIFIED" | "REJECTED") => {
+    try {
+      await api.reviewDriverKyc(id, status, status === "REJECTED" ? "Documents unclear" : undefined);
+      toast({ title: `KYC ${status.toLowerCase()}` });
+      load();
+    } catch {
+      toast({ title: "KYC review failed", variant: "destructive" });
+    }
+  };
+
   if (!stats)
     return (
       <div className="grid min-h-[60vh] place-items-center">
@@ -193,6 +203,7 @@ function AdminInner() {
                     <TableHead>Driver</TableHead>
                     <TableHead>Vehicle</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>KYC</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -211,7 +222,30 @@ function AdminInner() {
                           {d.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell>
+                        <Badge
+                          variant={
+                            d.kycStatus === "VERIFIED"
+                              ? "success"
+                              : d.kycStatus === "SUBMITTED"
+                                ? "warning"
+                                : "secondary"
+                          }
+                        >
+                          {d.kycStatus ?? "NOT_SUBMITTED"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right space-x-1">
+                        {d.kycStatus === "SUBMITTED" && (
+                          <>
+                            <Button size="sm" variant="outline" onClick={() => reviewKyc(d.id, "VERIFIED")}>
+                              Verify KYC
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => reviewKyc(d.id, "REJECTED")}>
+                              Reject KYC
+                            </Button>
+                          </>
+                        )}
                         {d.status !== "APPROVED" && (
                           <Button size="sm" className="mr-2" onClick={() => setStatus(d.id, "APPROVED")}>
                             Approve

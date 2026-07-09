@@ -19,9 +19,10 @@ Last updated: 2026-07-10
 - [x] k6 load test scripts + Terraform stubs
 - [x] Coupons + discounted payments
 - [x] Invoice generation + download
+- [x] Driver KYC + document upload stubs
 
 ## In progress
-- [ ] Driver KYC + document upload stubs
+- [ ] Admin live vehicle map + pricing rules UI
 
 ## Backlog — Frontend
 - [ ] Invoice download
