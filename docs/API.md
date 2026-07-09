@@ -23,16 +23,17 @@ cookie).
 | Method | Path | Auth | Body / Query | Notes |
 |---|---|---|---|---|
 | GET | `/search?q=` | – | query `q` | → `{ results: [{ displayName, lat, lng }] }` |
-| POST | `/estimate` | – | `{ pickupLat, pickupLng, dropoffLat, dropoffLng, vehicleType? }` | → `{ distanceKm, durationMin, surgeMultiplier, source, quotes[], selected? }` |
+| POST | `/estimate` | – | `{ pickupLat, pickupLng, dropoffLat, dropoffLng, vehicleType?, stops?: [{ lat, lng }] }` | Multi-leg route when `stops` provided |
 
 `quotes[]` = `{ vehicleType, fare: { base, distanceCost, timeCost, surgeMultiplier, total } }`.
 
 ## Bookings (customer) — `/api/bookings` (USER)
 | Method | Path | Body | Notes |
 |---|---|---|---|
-| POST | `/` | `{ pickupLocation, pickupLat, pickupLng, dropoffLocation, dropoffLat, dropoffLng, vehicleType, scheduledTime? }` | Fare recomputed server-side; offers job to drivers |
+| POST | `/` | `{ pickupLocation, pickupLat, pickupLng, dropoffLocation, dropoffLat, dropoffLng, vehicleType, scheduledTime?, stops?: [{ location, lat, lng }] }` | Fare recomputed server-side; creates `BookingStop` rows when `stops` set |
 | GET | `/` | – | Customer's bookings (newest first) |
-| GET | `/:id` | – | Booking (owner, assigned driver, or admin only) |
+| GET | `/:id` | – | Booking with `stops[]` (owner, assigned driver, or admin only) |
+| GET | `/:id/chat` | – | Chat history (booking participants only) → `{ messages[] }` |
 | POST | `/:id/cancel` | – | Allowed unless COMPLETED/CANCELLED |
 | POST | `/:id/rate` | `{ rating: 1..5 }` | Only on COMPLETED; updates driver rating |
 
@@ -78,6 +79,8 @@ Connect to the API origin. After connecting, the client emits `register`.
 | `booking:join` | `{ bookingId }` | Join `booking:{id}` room |
 | `booking:leave` | `{ bookingId }` | Leave the room |
 | `driver:location` | `{ driverId, lat, lng, bookingId? }` | Stream live location |
+| `chat:send` | `{ bookingId, senderUserId, senderRole, body }` | Persist + broadcast chat message |
+| `chat:typing` | `{ bookingId, userId, isTyping }` | Typing indicator to booking room |
 
 ### Server → client
 | Event | Payload | Sent to |
@@ -85,6 +88,8 @@ Connect to the API origin. After connecting, the client emits `register`.
 | `job:new` | `{ bookingId, pickupLocation, dropoffLocation, estimatedCost, estimatedDistance, vehicleType, distanceToPickupKm }` | Matched drivers |
 | `booking:update` | full booking object | Customer + booking room |
 | `booking:driverLocation` | `{ bookingId, lat, lng }` | Customer + booking room |
+| `chat:message` | chat message object | Booking room |
+| `chat:typing` | `{ bookingId, userId, isTyping }` | Booking room (except sender) |
 | `notification` | notification object | Target user/driver |
 
 ## Demo credentials (after `npm run seed`)

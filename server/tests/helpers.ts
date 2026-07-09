@@ -3,6 +3,8 @@ import { prisma } from "../src/lib/prisma";
 /** Wipe all tables in FK-safe order. Call in beforeEach for isolation. */
 export const resetDb = async () => {
   await prisma.notification.deleteMany();
+  await prisma.chatMessage.deleteMany();
+  await prisma.bookingStop.deleteMany();
   await prisma.walletTransaction.deleteMany();
   await prisma.paymentIntent.deleteMany();
   await prisma.wallet.deleteMany();

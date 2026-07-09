@@ -1,14 +1,14 @@
 import { Response } from "express";
-import { VehicleType } from "@prisma/client";
+import { VehicleType, Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { AuthRequest } from "../middlewares/auth";
-import { routeBetween } from "../utils/geo";
+import { routeBetween, routeThrough, GeoPoint } from "../utils/geo";
 import { estimateFare, currentSurge } from "../utils/pricing";
 import { offerBookingToDrivers } from "../services/matching";
 import { notify } from "../services/notifications";
 import { emitToBooking } from "../services/realtime";
 
-const bookingInclude = {
+const bookingInclude: Prisma.BookingInclude = {
   driver: {
     select: {
       id: true,
@@ -22,6 +22,7 @@ const bookingInclude = {
     },
   },
   user: { select: { id: true, name: true, phoneNumber: true } },
+  stops: { orderBy: { orderIndex: "asc" } },
 };
 
 export const createBooking = async (req: AuthRequest, res: Response) => {
@@ -35,6 +36,7 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
       dropoffLng,
       vehicleType,
       scheduledTime,
+      stops,
     } = req.body;
 
     if (
@@ -51,10 +53,18 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
     if (!Object.values(VehicleType).includes(vehicleType))
       return res.status(400).json({ message: "Invalid vehicle type" });
 
-    const route = await routeBetween(
+    const points: GeoPoint[] = [
       { lat: Number(pickupLat), lng: Number(pickupLng) },
-      { lat: Number(dropoffLat), lng: Number(dropoffLng) }
-    );
+      ...(Array.isArray(stops)
+        ? stops.map((s: any) => ({ lat: Number(s.lat), lng: Number(s.lng) }))
+        : []),
+      { lat: Number(dropoffLat), lng: Number(dropoffLng) },
+    ];
+
+    const route =
+      points.length > 2
+        ? await routeThrough(points)
+        : await routeBetween(points[0], points[points.length - 1]);
     const distanceKm = Number(route.distanceKm.toFixed(2));
     const durationMin = Number(route.durationMin.toFixed(1));
     const fare = estimateFare(vehicleType, distanceKm, durationMin, currentSurge());
@@ -74,6 +84,33 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
         estimatedCost: fare.total,
         status: "PENDING",
         scheduledTime: scheduledTime ? new Date(scheduledTime) : null,
+        stops: Array.isArray(stops)
+          ? {
+              create: [
+                {
+                  orderIndex: 0,
+                  location: pickupLocation,
+                  lat: Number(pickupLat),
+                  lng: Number(pickupLng),
+                  stopType: "PICKUP",
+                },
+                ...stops.map((s: any, i: number) => ({
+                  orderIndex: i + 1,
+                  location: s.location,
+                  lat: Number(s.lat),
+                  lng: Number(s.lng),
+                  stopType: "WAYPOINT",
+                })),
+                {
+                  orderIndex: stops.length + 1,
+                  location: dropoffLocation,
+                  lat: Number(dropoffLat),
+                  lng: Number(dropoffLng),
+                  stopType: "DROP",
+                },
+              ],
+            }
+          : undefined,
       },
       include: bookingInclude,
     });

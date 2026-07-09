@@ -132,6 +132,8 @@ model Booking {
   driver            Driver?        @relation("DriverBookings", fields: [driverId], references: [id], onDelete: SetNull)
   notifications     Notification[]
   paymentIntent     PaymentIntent?
+  stops             BookingStop[]
+  chatMessages      ChatMessage[]
 }
 
 model Notification {
@@ -201,5 +203,28 @@ model PaymentIntent {
   updatedAt  DateTime @updatedAt
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   booking    Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+}
+
+model BookingStop {
+  id        String   @id @default(cuid())
+  bookingId String
+  orderIndex Int
+  location  String
+  lat       Float
+  lng       Float
+  stopType  String   @default("WAYPOINT") // PICKUP | DROP | WAYPOINT
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingId, orderIndex])
+}
+
+model ChatMessage {
+  id           String   @id @default(cuid())
+  bookingId    String
+  senderUserId String
+  senderRole   String
+  body         String
+  createdAt    DateTime @default(now())
+  booking      Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 }
 

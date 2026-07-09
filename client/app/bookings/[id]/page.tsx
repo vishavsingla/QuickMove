@@ -6,7 +6,9 @@ import { Loader2, Phone, Star, XCircle, CheckCircle2 } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { RequireRole } from "@/components/RequireRole";
 import { LiveMap, MapMarker } from "@/components/LiveMap";
+import { ChatPanel } from "@/components/ChatPanel";
 import { useSocket } from "@/context/SocketProvider";
+import { useAuth } from "@/context/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +25,7 @@ const TIMELINE: BookingStatus[] = [
 ];
 
 function TrackInner({ id }: { id: string }) {
+  const { user } = useAuth();
   const { socket } = useSocket();
   const { toast } = useToast();
   const [booking, setBooking] = useState<Booking | null>(null);
@@ -66,10 +69,21 @@ function TrackInner({ id }: { id: string }) {
 
   const markers = useMemo<MapMarker[]>(() => {
     if (!booking) return [];
-    const m: MapMarker[] = [
-      { lat: booking.pickupLat, lng: booking.pickupLng, kind: "pickup", label: "Pickup" },
-      { lat: booking.dropoffLat, lng: booking.dropoffLng, kind: "dropoff", label: "Drop-off" },
-    ];
+    const m: MapMarker[] = [];
+    if (booking.stops?.length) {
+      for (const s of booking.stops) {
+        const kind =
+          s.stopType === "PICKUP"
+            ? "pickup"
+            : s.stopType === "DROP"
+              ? "dropoff"
+              : "waypoint";
+        m.push({ lat: s.lat, lng: s.lng, kind, label: s.location });
+      }
+    } else {
+      m.push({ lat: booking.pickupLat, lng: booking.pickupLng, kind: "pickup", label: "Pickup" });
+      m.push({ lat: booking.dropoffLat, lng: booking.dropoffLng, kind: "dropoff", label: "Drop-off" });
+    }
     if (driverPos) m.push({ ...driverPos, kind: "driver", label: "Driver" });
     return m;
   }, [booking, driverPos]);
@@ -170,6 +184,13 @@ function TrackInner({ id }: { id: string }) {
 
             <div className="space-y-1 text-sm">
               <p><span className="text-muted-foreground">From:</span> {booking.pickupLocation}</p>
+              {booking.stops
+                ?.filter((s) => s.stopType === "WAYPOINT")
+                .map((s, i) => (
+                  <p key={s.id}>
+                    <span className="text-muted-foreground">Stop {i + 1}:</span> {s.location}
+                  </p>
+                ))}
               <p><span className="text-muted-foreground">To:</span> {booking.dropoffLocation}</p>
               <p className="flex justify-between pt-1">
                 <span className="text-muted-foreground">{booking.estimatedDistance} km · {Math.round(booking.estimatedDuration)} min</span>
@@ -252,6 +273,10 @@ function TrackInner({ id }: { id: string }) {
             )}
           </CardContent>
         </Card>
+
+        {user && booking.driver && !["CANCELLED", "REJECTED"].includes(booking.status) && (
+          <ChatPanel bookingId={id} userId={user.id} role="USER" />
+        )}
       </div>
     </div>
   );

@@ -31,7 +31,16 @@
 - Kubernetes manifests under deploy/k8s/
 - Root README with quick start
 
+### Iteration 5 — Payments + wallet (PR #7)
+- Wallet ledger, top-up, test gateway payment intents
+- `/wallet` page + checkout on completed bookings
+
+### Iteration 6 — Multi-stop + chat (current)
+- `BookingStop` + `ChatMessage` Prisma models
+- Multi-leg routing via `routeThrough()`
+- Chat API + WebSocket events; `ChatPanel` on user/driver views
+- 38 backend tests passing
+
 ### Next
-- Merge PR, add Playwright e2e
-- Redis socket adapter
-- Payment flow, chat, multi-stop
+- Refresh tokens + rate limiting + security hardening
+- k6 load tests + Terraform stubs

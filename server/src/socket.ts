@@ -4,6 +4,7 @@ import { createClient, RedisClientType } from "redis";
 import http from "http";
 import { env } from "./config/env";
 import { prisma } from "./lib/prisma";
+import { saveMessage } from "./controllers/chat.controller";
 
 export let io: Server | null = null;
 let pubClient: RedisClientType | null = null;
@@ -60,6 +61,54 @@ const attachHandlers = (server: Server) => {
         } catch {
           /* stale booking/driver */
         }
+      }
+    );
+
+    socket.on(
+      "chat:send",
+      async ({
+        bookingId,
+        senderUserId,
+        senderRole,
+        body,
+      }: {
+        bookingId: string;
+        senderUserId: string;
+        senderRole: string;
+        body: string;
+      }) => {
+        if (!bookingId || !body?.trim() || !senderUserId) return;
+        try {
+          const msg = await saveMessage(
+            bookingId,
+            senderUserId,
+            senderRole,
+            body.trim().slice(0, 2000)
+          );
+          server.to(`booking:${bookingId}`).emit("chat:message", msg);
+        } catch {
+          /* invalid booking */
+        }
+      }
+    );
+
+    socket.on(
+      "chat:typing",
+      ({
+        bookingId,
+        userId,
+        isTyping,
+      }: {
+        bookingId: string;
+        userId: string;
+        isTyping: boolean;
+      }) => {
+        if (!bookingId) return;
+        socket.to(`booking:${bookingId}`).emit("chat:typing", {
+          bookingId,
+          userId,
+          isTyping,
+        });
       }
     );
   });
