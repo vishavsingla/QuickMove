@@ -18,9 +18,10 @@ Last updated: 2026-07-10
 - [x] Refresh tokens + rate limiting + Helmet security headers
 - [x] k6 load test scripts + Terraform stubs
 - [x] Coupons + discounted payments
+- [x] Invoice generation + download
 
 ## In progress
-- [ ] Invoice generation + download
+- [ ] Driver KYC + document upload stubs
 
 ## Backlog — Frontend
 - [ ] Invoice download

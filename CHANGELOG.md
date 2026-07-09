@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 ### Added
-- Coupon system: validate/apply on booking, admin CRUD, discounted payment intents
+- Tax invoices: `Invoice` model, `GET /api/bookings/:id/invoice`, auto-issue on payment, HTML download
 - Demo coupons `WELCOME50` and `SAVE20` in seed
 - Terraform stubs: VPC, RDS Postgres, ElastiCache Redis (`deploy/terraform/`)
 - Short-lived access tokens (15m default) + 7-day refresh tokens

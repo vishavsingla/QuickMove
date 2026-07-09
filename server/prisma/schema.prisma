@@ -137,6 +137,7 @@ model Booking {
   couponCode        String?
   discountAmount    Float          @default(0)
   couponRedemption  CouponRedemption?
+  invoice           Invoice?
 }
 
 model Notification {
@@ -257,5 +258,17 @@ model CouponRedemption {
   createdAt DateTime @default(now())
   coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
   booking   Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+}
+
+model Invoice {
+  id            String   @id @default(cuid())
+  invoiceNumber String   @unique
+  bookingId     String   @unique
+  subtotal      Float
+  discount      Float    @default(0)
+  tax           Float    @default(0)
+  total         Float
+  issuedAt      DateTime @default(now())
+  booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 }
 

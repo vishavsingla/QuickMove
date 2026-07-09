@@ -148,6 +148,8 @@ export const api = {
     }),
   getChatMessages: (id: string) =>
     request<{ messages: import("./types").ChatMessage[] }>(`/api/bookings/${id}/chat`),
+  getInvoice: (id: string) =>
+    request<{ invoice: any; html: string }>(`/api/bookings/${id}/invoice`),
 
   // driver
   driverProfile: () => request<{ driver: Driver }>("/api/driver/profile"),

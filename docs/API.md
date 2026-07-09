@@ -35,7 +35,7 @@ cookie).
 | POST | `/` | `{ pickupLocation, pickupLat, pickupLng, dropoffLocation, dropoffLat, dropoffLng, vehicleType, scheduledTime?, stops?: [{ location, lat, lng }] }` | Fare recomputed server-side; creates `BookingStop` rows when `stops` set |
 | GET | `/` | – | Customer's bookings (newest first) |
 | GET | `/:id` | – | Booking with `stops[]` (owner, assigned driver, or admin only) |
-| GET | `/:id/chat` | – | Chat history (booking participants only) → `{ messages[] }` |
+| GET | `/:id/invoice` | – | Tax invoice JSON + HTML (`?format=html` for raw HTML) |
 | POST | `/:id/cancel` | – | Allowed unless COMPLETED/CANCELLED |
 | POST | `/:id/rate` | `{ rating: 1..5 }` | Only on COMPLETED; updates driver rating |
 
