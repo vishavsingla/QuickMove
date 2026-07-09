@@ -41,9 +41,13 @@
 - Prometheus `/metrics` + OpenTelemetry bootstrap stub
 - 51 backend tests passing
 
-### Iteration 12 — RTL component tests (current)
-- Vitest + RTL for Badge, RequireRole, currency/status helpers
-- CI client job runs `npm test` (9 component tests)
+### Iteration 13 — OTel, Grafana, security, docs (current)
+- Full OpenTelemetry Node SDK with OTLP exporter
+- Grafana dashboard stub + observability docker-compose
+- Security integration tests (helmet, RBAC, hash leak)
+- LLD + operations runbook
+- 58 backend tests, 9 client RTL tests
 
 ### Next
-- Full OTel SDK + Grafana dashboards, security review, LLD/runbooks
+- Close remaining Porter/Lalamove parity gaps
+- Verify all stop conditions
