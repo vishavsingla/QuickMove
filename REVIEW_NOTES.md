@@ -6,16 +6,15 @@
 - Atomic driver accept prevents double-assignment (integration test)
 - JWT role guards on all protected routes
 - Client build passes typecheck + lint
-- Backend 40/40 tests green
-- Refresh token rotation + rate limiting + Helmet security headers
-- Redis Socket.io adapter for horizontal scaling
-- Payments + wallet flows with test gateway
-- Multi-stop bookings + in-app chat (REST + WebSocket)
+- Backend 51/51 tests green
+- Driver KYC, coupons, invoices, admin live map, pricing rules
+- Prometheus metrics + OTel stub
 - `.env` excluded from git; secrets not committed
 
 ### Open findings (to address in next iterations)
 - Driver GPS on frontend is simulated; real `navigator.geolocation` needed for mobile
-- k6 load test scripts and Terraform stubs added
+- Driver earnings dashboard not yet built
+- Full OTel SDK wiring when collector is available
 
 ### Security
 - Passwords hashed with bcrypt (cost 10)

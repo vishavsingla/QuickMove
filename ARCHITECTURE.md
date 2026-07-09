@@ -38,13 +38,16 @@ flowchart TB
 - **Payments**: Wallet ledger, test gateway intents
 - **Multi-stop**: `BookingStop` waypoints on bookings; fare from full route
 - **Chat**: Per-booking messages via REST history + Socket.io live delivery
+- **Coupons/Invoices**: Discount codes + tax invoice generation
+- **KYC**: Driver document upload stubs + admin verification
+- **Admin ops**: Live driver map, DB-backed pricing rules
+- **Observability**: Prometheus `/metrics`, OTel bootstrap stub
 
 ## Target evolution (documented, incremental)
-- Redis: Socket.io adapter, pub/sub, fare cache, session store
 - Modular services: booking, pricing, location, matching, notifications, payments
 - Event bus: Kafka for booking lifecycle events (where it adds value)
 - Search: Elasticsearch for address/driver search at scale
-- Observability: OpenTelemetry traces, Prometheus metrics, Grafana dashboards
+- Full OpenTelemetry SDK + Grafana dashboards
 
 ## Module map
 
@@ -52,13 +55,16 @@ flowchart TB
 |--------|-----------------|----------------|
 | Auth | `controllers/auth`, `middlewares/auth`, `services/sessions` | Register, login, JWT, refresh, RBAC |
 | Geo | `controllers/geo`, `utils/geo` | Search, route, distance |
-| Pricing | `utils/pricing` | Fare quotes, surge |
+| Pricing | `utils/pricing`, `services/pricingRules` | Fare quotes, surge, admin rules |
+| KYC | `controllers/kyc` | Document stubs, admin review |
+| Observability | `observability/metrics`, `observability/tracing` | Prometheus, OTel stub |
+| Admin | `controllers/admin` | Approvals, stats, live map, pricing |
 | Booking | `controllers/booking` | CRUD, cancel, rate, multi-stop |
 | Chat | `controllers/chat`, `socket.ts` | Message history, live chat |
 | Payments | `controllers/payment`, `services/payments` | Wallet, intents, test gateway |
 | Matching | `services/matching` | Offer jobs to nearby drivers |
 | Driver | `controllers/driver` | Offers, accept, status, location |
-| Admin | `controllers/admin` | Approvals, stats |
+| Admin | `controllers/admin` | Approvals, stats, live map, pricing |
 | Notifications | `services/notifications`, `services/realtime` | DB + socket push |
 | Realtime | `socket.ts` | Live location, status sync |
 
@@ -68,5 +74,6 @@ flowchart TB
 - Production: Kubernetes manifests under `deploy/k8s/`
 - Load tests: `deploy/k6/run.sh smoke.js` (requires running API + optional seed)
 - IaC stubs: `deploy/terraform/` (VPC, RDS, ElastiCache)
+- Metrics: `GET /metrics` + `deploy/observability/prometheus.yml`
 
 See `docs/` for detailed sequence diagrams and API contracts.
