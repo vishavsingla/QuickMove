@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Loader2, MapPin, Navigation, Check, X, Upload, Shield, IndianRupee, TrendingUp } from "lucide-react";
 import { api } from "@/lib/api";
 import { RequireRole } from "@/components/RequireRole";
@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { useDriverLocation } from "@/hooks/useDriverLocation";
 import { STATUS_META, VEHICLE_META, currency } from "@/lib/ui";
 import type { Booking, Driver } from "@/lib/types";
 
@@ -29,7 +30,7 @@ function DriverInner() {
   const [driver, setDriver] = useState<Driver | null>(null);
   const [offers, setOffers] = useState<Booking[]>([]);
   const [jobs, setJobs] = useState<Booking[]>([]);
-  const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [initialPos, setInitialPos] = useState<{ lat: number; lng: number } | null>(null);
   const [kyc, setKyc] = useState<any>(null);
   const [licenseFile, setLicenseFile] = useState<File | null>(null);
   const [idFile, setIdFile] = useState<File | null>(null);
@@ -50,12 +51,19 @@ function DriverInner() {
       booking: { pickupLocation: string; dropoffLocation: string } | null;
     }>;
   } | null>(null);
-  const posRef = useRef(pos);
-  posRef.current = pos;
 
   const activeJob = jobs.find((j) =>
     ["ACCEPTED", "ARRIVED", "IN_PROGRESS"].includes(j.status)
   );
+
+  const trackingEnabled = !!(driver?.isAvailable || activeJob);
+  const { pos, source: locationSource } = useDriverLocation({
+    enabled: trackingEnabled,
+    driverId,
+    socket,
+    activeJob: activeJob ?? null,
+    initialPos,
+  });
 
   const refresh = useCallback(async () => {
     const [p, o, j, k, e] = await Promise.all([
@@ -70,9 +78,9 @@ function DriverInner() {
     setJobs(j.jobs);
     if (k) setKyc(k.kyc);
     if (e) setEarnings(e);
-    if (p.driver.currentLat && p.driver.currentLng && !posRef.current)
-      setPos({ lat: p.driver.currentLat, lng: p.driver.currentLng });
-  }, []);
+    if (p.driver.currentLat && p.driver.currentLng && !initialPos)
+      setInitialPos({ lat: p.driver.currentLat, lng: p.driver.currentLng });
+  }, [initialPos]);
 
   useEffect(() => {
     refresh();
@@ -87,35 +95,6 @@ function DriverInner() {
       socket.off("job:new", onNew);
     };
   }, [socket, refresh]);
-
-  // Simulate GPS movement toward the current target of the active job and stream it.
-  useEffect(() => {
-    if (!activeJob || !socket) return;
-    const target =
-      activeJob.status === "IN_PROGRESS"
-        ? { lat: activeJob.dropoffLat, lng: activeJob.dropoffLng }
-        : { lat: activeJob.pickupLat, lng: activeJob.pickupLng };
-
-    if (!posRef.current)
-      setPos({ lat: target.lat + 0.02, lng: target.lng + 0.02 });
-
-    const interval = setInterval(() => {
-      const cur = posRef.current;
-      if (!cur) return;
-      const next = {
-        lat: cur.lat + (target.lat - cur.lat) * 0.15,
-        lng: cur.lng + (target.lng - cur.lng) * 0.15,
-      };
-      setPos(next);
-      socket.emit("driver:location", {
-        driverId,
-        lat: next.lat,
-        lng: next.lng,
-        bookingId: activeJob.id,
-      });
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [activeJob, socket, driverId]);
 
   const toggleAvailability = async (value: boolean) => {
     const r = await api.setAvailability(value);
@@ -191,6 +170,11 @@ function DriverInner() {
           <span className="text-sm font-medium">
             {driver.isAvailable ? "Online" : "Offline"}
           </span>
+          {trackingEnabled && locationSource && (
+            <Badge variant={locationSource === "gps" ? "success" : "secondary"}>
+              {locationSource === "gps" ? "Live GPS" : "Simulated"}
+            </Badge>
+          )}
           <Switch
             checked={!!driver.isAvailable}
             onCheckedChange={toggleAvailability}

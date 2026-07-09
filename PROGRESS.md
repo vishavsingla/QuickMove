@@ -41,11 +41,12 @@
 - Prometheus `/metrics` + OpenTelemetry bootstrap stub
 - 51 backend tests passing
 
-### Iteration 11 — Driver earnings (current)
+### Iteration 11 — Driver earnings + real GPS (current)
 - `GET /api/driver/earnings` with balance, week total, payout history
 - Earnings card on driver dashboard + `/driver/earnings` page
+- `useDriverLocation` hook: `navigator.geolocation` with simulation fallback
 - 53 backend tests passing
 
 ### Next
-- Real GPS via `navigator.geolocation`, component tests (RTL)
+- Component tests (RTL), Grafana dashboards
 - Porter/Lalamove remaining gaps from TASKS.md
