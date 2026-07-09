@@ -63,8 +63,7 @@ flowchart TB
 | Chat | `controllers/chat`, `socket.ts` | Message history, live chat |
 | Payments | `controllers/payment`, `services/payments` | Wallet, intents, test gateway |
 | Matching | `services/matching` | Offer jobs to nearby drivers |
-| Driver | `controllers/driver` | Offers, accept, status, location |
-| Admin | `controllers/admin` | Approvals, stats, live map, pricing |
+| Driver | `controllers/driver` | Offers, accept, status, location, KYC |
 | Notifications | `services/notifications`, `services/realtime` | DB + socket push |
 | Realtime | `socket.ts` | Live location, status sync |
 
