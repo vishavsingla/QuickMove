@@ -41,7 +41,7 @@ flowchart TB
 - **Coupons/Invoices**: Discount codes + tax invoice generation
 - **KYC**: Driver document upload stubs + admin verification
 - **Admin ops**: Live driver map, DB-backed pricing rules
-- **Observability**: Prometheus `/metrics`, OTel bootstrap stub
+- **Observability**: Prometheus `/metrics`, OpenTelemetry SDK, Grafana dashboards
 
 ## Target evolution (documented, incremental)
 - Modular services: booking, pricing, location, matching, notifications, payments
@@ -57,7 +57,7 @@ flowchart TB
 | Geo | `controllers/geo`, `utils/geo` | Search, route, distance |
 | Pricing | `utils/pricing`, `services/pricingRules` | Fare quotes, surge, admin rules |
 | KYC | `controllers/kyc` | Document stubs, admin review |
-| Observability | `observability/metrics`, `observability/tracing` | Prometheus, OTel stub |
+| Observability | `observability/metrics`, `observability/tracing` | Prometheus, OTel SDK |
 | Admin | `controllers/admin` | Approvals, stats, live map, pricing |
 | Booking | `controllers/booking` | CRUD, cancel, rate, multi-stop |
 | Chat | `controllers/chat`, `socket.ts` | Message history, live chat |
