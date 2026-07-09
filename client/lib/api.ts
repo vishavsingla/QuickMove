@@ -5,6 +5,7 @@ import type {
   Estimate,
   PlaceResult,
   AppNotification,
+  SavedAddress,
   VehicleType,
 } from "./types";
 
@@ -162,5 +163,30 @@ export const api = {
   markRead: (id: string) =>
     request<{ message: string }>(`/api/notifications/${id}/read`, {
       method: "POST",
+    }),
+
+  // user profile & addresses
+  getProfile: () => request<{ user: any }>("/api/user/profile"),
+  updateProfile: (body: { name?: string; phoneNumber?: string }) =>
+    request<{ user: any }>("/api/user/profile", {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  listAddresses: () =>
+    request<{ addresses: SavedAddress[] }>("/api/user/addresses"),
+  createAddress: (body: {
+    label: string;
+    address: string;
+    lat: number;
+    lng: number;
+    isDefault?: boolean;
+  }) =>
+    request<{ address: SavedAddress }>("/api/user/addresses", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  deleteAddress: (id: string) =>
+    request<{ message: string }>(`/api/user/addresses/${id}`, {
+      method: "DELETE",
     }),
 };

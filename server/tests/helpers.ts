@@ -4,6 +4,7 @@ import { prisma } from "../src/lib/prisma";
 export const resetDb = async () => {
   await prisma.notification.deleteMany();
   await prisma.booking.deleteMany();
+  await prisma.savedAddress.deleteMany();
   await prisma.vehicle.deleteMany();
   await prisma.session.deleteMany();
   await prisma.admin.deleteMany();

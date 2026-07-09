@@ -108,6 +108,15 @@ export interface AppNotification {
   createdAt: string;
 }
 
+export interface SavedAddress {
+  id: string;
+  label: string;
+  address: string;
+  lat: number;
+  lng: number;
+  isDefault: boolean;
+}
+
 export const VEHICLE_LABELS: Record<VehicleType, string> = {
   BIKE: "Bike",
   CAR: "Car",

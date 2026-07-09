@@ -22,8 +22,16 @@
 - Address autocomplete via backend Nominatim proxy
 - Client build green, backend tests green
 
+### Iteration 3 — Platform infrastructure + user profile
+- User profile API + saved addresses (Prisma migration)
+- Profile page in client
+- Root docker-compose (postgres + redis + server + client)
+- Multi-stage Dockerfiles
+- Deep HLD doc with 5 Mermaid sequence diagrams + ER + deployment
+- Kubernetes manifests under deploy/k8s/
+- Root README with quick start
+
 ### Next
-- Commit + merge frontend PR
-- Add CI workflow
-- Docker-compose full stack
-- Deep architecture docs with Mermaid diagrams
+- Merge PR, add Playwright e2e
+- Redis socket adapter
+- Payment flow, chat, multi-stop
