@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- Driver bank withdrawal: `POST /api/driver/bank`, `POST /api/driver/withdraw`, `GET /api/driver/payouts`
 - Full OpenTelemetry Node SDK (OTLP exporter when `OTEL_EXPORTER_OTLP_ENDPOINT` set)
 - Grafana dashboard stub + `deploy/observability/docker-compose.yml` (Prometheus + Grafana)
 - Vitest + React Testing Library component tests (Badge, RequireRole, ui helpers)
