@@ -28,6 +28,7 @@ function TrackInner({ id }: { id: string }) {
   const [booking, setBooking] = useState<Booking | null>(null);
   const [driverPos, setDriverPos] = useState<{ lat: number; lng: number } | null>(null);
   const [ratingValue, setRatingValue] = useState(0);
+  const [paying, setPaying] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
   const load = useCallback(() => {
@@ -95,6 +96,24 @@ function TrackInner({ id }: { id: string }) {
       load();
     } catch (err) {
       toast({ title: "Could not submit rating", variant: "destructive" });
+    }
+  };
+
+  const pay = async (method: "wallet" | "test_card", token?: string) => {
+    setPaying(true);
+    try {
+      const { intent } = await api.createPaymentIntent(id);
+      await api.confirmPayment(intent.id, method, token);
+      toast({ title: "Payment successful" });
+      load();
+    } catch (err: unknown) {
+      toast({
+        title: "Payment failed",
+        description: err instanceof ApiError ? err.message : "Try again",
+        variant: "destructive",
+      });
+    } finally {
+      setPaying(false);
     }
   };
 
@@ -178,6 +197,33 @@ function TrackInner({ id }: { id: string }) {
               <Button variant="destructive" className="w-full" onClick={cancel}>
                 <XCircle className="mr-2 h-4 w-4" /> Cancel booking
               </Button>
+            )}
+
+            {booking.status === "COMPLETED" && booking.paymentStatus !== "PAID" && (
+              <div className="rounded-lg border p-3 space-y-2">
+                <p className="text-sm font-medium">Pay {currency(booking.estimatedCost)}</p>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button
+                    className="flex-1"
+                    disabled={paying}
+                    onClick={() => pay("wallet")}
+                  >
+                    Pay with wallet
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    disabled={paying}
+                    onClick={() => pay("test_card", "test_success")}
+                  >
+                    Test card (success)
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {booking.status === "COMPLETED" && booking.paymentStatus === "PAID" && (
+              <p className="text-center text-sm text-emerald-600">Payment complete ✓</p>
             )}
 
             {booking.status === "COMPLETED" && (

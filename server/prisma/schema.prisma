@@ -23,6 +23,8 @@ model User {
   admin          Admin?
   notifications  Notification[]
   savedAddresses SavedAddress[]
+  wallet           Wallet?
+  paymentIntents   PaymentIntent[]
 }
 
 model SavedAddress {
@@ -129,6 +131,7 @@ model Booking {
   driverId          String?
   driver            Driver?        @relation("DriverBookings", fields: [driverId], references: [id], onDelete: SetNull)
   notifications     Notification[]
+  paymentIntent     PaymentIntent?
 }
 
 model Notification {
@@ -161,3 +164,42 @@ enum BookingStatus {
   REJECTED
   CANCELLED
 }
+
+model Wallet {
+  id           String              @id @default(cuid())
+  userId       String              @unique
+  balance      Float               @default(0)
+  currency     String              @default("INR")
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+}
+
+model WalletTransaction {
+  id          String   @id @default(cuid())
+  walletId    String
+  amount      Float
+  type        String // CREDIT | DEBIT
+  status      String   @default("COMPLETED")
+  reference   String?
+  description String
+  createdAt   DateTime @default(now())
+  wallet      Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+}
+
+model PaymentIntent {
+  id         String   @id @default(cuid())
+  userId     String
+  bookingId  String?  @unique
+  amount     Float
+  currency   String   @default("INR")
+  status     String   @default("PENDING") // PENDING | SUCCEEDED | FAILED | CANCELLED
+  method     String?
+  gatewayRef String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  booking    Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+}
+

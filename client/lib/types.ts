@@ -60,6 +60,7 @@ export interface Booking {
   estimatedDuration: number;
   status: BookingStatus;
   paymentStatus: string;
+  paymentMethod: string | null;
   driverLat: number | null;
   driverLng: number | null;
   rating: number | null;

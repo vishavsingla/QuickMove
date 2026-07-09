@@ -189,4 +189,36 @@ export const api = {
     request<{ message: string }>(`/api/user/addresses/${id}`, {
       method: "DELETE",
     }),
+
+  // payments & wallet
+  getWallet: () =>
+    request<{
+      wallet: { balance: number; currency: string };
+      transactions: Array<{
+        id: string;
+        amount: number;
+        type: string;
+        description: string;
+        createdAt: string;
+      }>;
+    }>("/api/payments/wallet"),
+  topUpWallet: (amount: number) =>
+    request<{ wallet: { balance: number } }>("/api/payments/wallet/topup", {
+      method: "POST",
+      body: JSON.stringify({ amount }),
+    }),
+  createPaymentIntent: (bookingId: string) =>
+    request<{ intent: { id: string; amount: number; status: string } }>(
+      "/api/payments/intents",
+      { method: "POST", body: JSON.stringify({ bookingId }) }
+    ),
+  confirmPayment: (
+    intentId: string,
+    method: "wallet" | "test_card",
+    token?: string
+  ) =>
+    request<{ message: string }>(`/api/payments/intents/${intentId}/confirm`, {
+      method: "POST",
+      body: JSON.stringify({ method, token }),
+    }),
 };
