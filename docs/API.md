@@ -47,7 +47,10 @@ cookie).
 | POST | `/location` | `{ lat, lng }` | REST fallback for location |
 | GET | `/offers` | – | PENDING bookings matching vehicle type (empty until APPROVED) |
 | GET | `/jobs` | – | Bookings assigned to this driver |
-| GET | `/earnings` | – | → `{ summary: { balance, totalEarnings, weekEarnings, tripCount, pendingTrips, commissionRate }, transactions[] }` |
+| GET | `/earnings` | – | → `{ summary, transactions[] }` |
+| GET | `/payouts` | – | Bank withdrawal history |
+| POST | `/bank` | `{ bankAccNo, ifscCode }` | Save payout bank details |
+| POST | `/withdraw` | `{ amount }` | Instant stub bank payout (min ₹100) |
 | GET | `/kyc` | – | KYC status + document URLs |
 | POST | `/kyc/submit` | `{ licenseFileName, idFileName }` | Upload stubs → `SUBMITTED` |
 | POST | `/bookings/:id/accept` | – | Atomic claim; `409` if already taken |

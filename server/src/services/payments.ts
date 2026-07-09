@@ -60,6 +60,52 @@ export const debitWallet = async (
   return updated;
 };
 
+export const MIN_WITHDRAWAL = 100;
+
+/** Stub instant bank payout — debits wallet and records a completed withdrawal. */
+export const requestDriverWithdrawal = async (
+  userId: string,
+  amount: number,
+  bankAccNo: string,
+  ifscCode: string
+) => {
+  if (amount < MIN_WITHDRAWAL)
+    throw new Error(`Minimum withdrawal is ₹${MIN_WITHDRAWAL}`);
+  if (!bankAccNo || !ifscCode) throw new Error("Bank details required");
+
+  const wallet = await ensureWallet(userId);
+  if (wallet.balance < amount) throw new Error("Insufficient balance");
+
+  const gatewayRef = `payout_stub_${Date.now()}`;
+
+  const [updated, txn] = await prisma.$transaction([
+    prisma.wallet.update({
+      where: { id: wallet.id },
+      data: { balance: { decrement: amount } },
+    }),
+    prisma.walletTransaction.create({
+      data: {
+        walletId: wallet.id,
+        amount,
+        type: "DEBIT",
+        description: "Bank withdrawal",
+        reference: gatewayRef,
+        status: "COMPLETED",
+      },
+    }),
+  ]);
+
+  return {
+    id: txn.id,
+    amount,
+    status: "COMPLETED" as const,
+    gatewayRef,
+    bankAccNo: `****${bankAccNo.slice(-4)}`,
+    ifscCode,
+    wallet: updated,
+  };
+};
+
 /**
  * Test payment gateway: tokens `test_success` and `test_fail` simulate card outcomes.
  */

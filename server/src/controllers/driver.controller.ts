@@ -4,7 +4,7 @@ import { prisma } from "../lib/prisma";
 import { AuthRequest } from "../middlewares/auth";
 import { notify } from "../services/notifications";
 import { emitToBooking, emitToUser } from "../services/realtime";
-import { ensureWallet } from "../services/payments";
+import { ensureWallet, requestDriverWithdrawal } from "../services/payments";
 
 const driverId = (req: AuthRequest) => req.auth?.driverId;
 
@@ -239,4 +239,62 @@ export const getEarnings = async (req: AuthRequest, res: Response) => {
       booking: t.reference ? bookingMap.get(t.reference) ?? null : null,
     })),
   });
+};
+
+export const updateBankDetails = async (req: AuthRequest, res: Response) => {
+  const id = driverId(req);
+  if (!id) return res.status(400).json({ message: "Not a driver account" });
+  const { bankAccNo, ifscCode } = req.body as { bankAccNo?: string; ifscCode?: string };
+  if (!bankAccNo?.trim() || !ifscCode?.trim())
+    return res.status(400).json({ message: "bankAccNo and ifscCode required" });
+  const driver = await prisma.driver.update({
+    where: { id },
+    data: { bankAccNo: bankAccNo.trim(), ifscCode: ifscCode.trim().toUpperCase() },
+  });
+  return res.status(200).json({ driver });
+};
+
+export const requestWithdrawal = async (req: AuthRequest, res: Response) => {
+  const id = driverId(req);
+  if (!id) return res.status(400).json({ message: "Not a driver account" });
+  const driver = await prisma.driver.findUnique({ where: { id } });
+  if (!driver) return res.status(404).json({ message: "Driver not found" });
+  if (!driver.bankAccNo || !driver.ifscCode)
+    return res.status(400).json({ message: "Add bank details before withdrawing" });
+
+  const amount = Number(req.body.amount);
+  if (!amount || amount <= 0)
+    return res.status(400).json({ message: "Invalid amount" });
+
+  try {
+    const payout = await requestDriverWithdrawal(
+      driver.userId,
+      amount,
+      driver.bankAccNo,
+      driver.ifscCode
+    );
+    await notify({
+      type: "PAYOUT",
+      message: `₹${amount} withdrawn to bank account ending ${driver.bankAccNo.slice(-4)}`,
+      driverId: id,
+    });
+    return res.status(200).json({ message: "Withdrawal processed", payout });
+  } catch (err) {
+    return res.status(400).json({ message: (err as Error).message });
+  }
+};
+
+export const listPayouts = async (req: AuthRequest, res: Response) => {
+  const id = driverId(req);
+  if (!id) return res.status(400).json({ message: "Not a driver account" });
+  const driver = await prisma.driver.findUnique({ where: { id } });
+  if (!driver) return res.status(404).json({ message: "Driver not found" });
+
+  const wallet = await ensureWallet(driver.userId);
+  const payouts = await prisma.walletTransaction.findMany({
+    where: { walletId: wallet.id, description: "Bank withdrawal" },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
+  return res.status(200).json({ payouts });
 };

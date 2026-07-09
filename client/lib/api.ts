@@ -192,6 +192,31 @@ export const api = {
         } | null;
       }>;
     }>("/api/driver/earnings"),
+  driverPayouts: () =>
+    request<{
+      payouts: Array<{
+        id: string;
+        amount: number;
+        type: string;
+        status: string;
+        reference: string | null;
+        description: string;
+        createdAt: string;
+      }>;
+    }>("/api/driver/payouts"),
+  updateDriverBank: (bankAccNo: string, ifscCode: string) =>
+    request<{ driver: Driver }>("/api/driver/bank", {
+      method: "POST",
+      body: JSON.stringify({ bankAccNo, ifscCode }),
+    }),
+  driverWithdraw: (amount: number) =>
+    request<{
+      message: string;
+      payout: { amount: number; status: string; gatewayRef: string };
+    }>("/api/driver/withdraw", {
+      method: "POST",
+      body: JSON.stringify({ amount }),
+    }),
   acceptJob: (id: string) =>
     request<{ booking: Booking }>(`/api/driver/bookings/${id}/accept`, {
       method: "POST",

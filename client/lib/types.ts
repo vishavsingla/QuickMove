@@ -49,6 +49,8 @@ export interface Driver {
   licenseDocUrl?: string | null;
   idDocUrl?: string | null;
   kycNote?: string | null;
+  bankAccNo?: string | null;
+  ifscCode?: string | null;
 }
 
 export interface Booking {
