@@ -41,6 +41,7 @@ flowchart TB
 - **Coupons/Invoices**: Discount codes + tax invoice generation
 - **KYC**: Driver document upload stubs + admin verification
 - **Admin ops**: Live driver map, DB-backed pricing rules
+- **Push**: Web push stubs via service worker + `PushSubscription` model
 - **Observability**: Prometheus `/metrics`, OpenTelemetry SDK, Grafana dashboards
 
 ## Target evolution (documented, incremental)
@@ -63,8 +64,8 @@ flowchart TB
 | Chat | `controllers/chat`, `socket.ts` | Message history, live chat |
 | Payments | `controllers/payment`, `services/payments` | Wallet, intents, test gateway |
 | Matching | `services/matching` | Offer jobs to nearby drivers |
-| Driver | `controllers/driver` | Offers, accept, status, location, KYC |
-| Notifications | `services/notifications`, `services/realtime` | DB + socket push |
+| Driver | `controllers/driver` | Offers, accept, status, location, KYC, payouts |
+| Notifications | `services/notifications`, `services/push` | DB + socket + push stub |
 | Realtime | `socket.ts` | Live location, status sync |
 
 ## Deployment (target)
