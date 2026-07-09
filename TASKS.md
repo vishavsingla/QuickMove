@@ -28,7 +28,7 @@ Last updated: 2026-07-10
 
 ## Backlog — Frontend
 - [x] Driver earnings dashboard
-- [ ] Component tests (RTL)
+- [x] Component tests (RTL)
 
 ## Backlog — DevOps
 - [x] Terraform stub (`deploy/terraform/`)

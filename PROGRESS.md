@@ -41,12 +41,9 @@
 - Prometheus `/metrics` + OpenTelemetry bootstrap stub
 - 51 backend tests passing
 
-### Iteration 11 — Driver earnings + real GPS (current)
-- `GET /api/driver/earnings` with balance, week total, payout history
-- Earnings card on driver dashboard + `/driver/earnings` page
-- `useDriverLocation` hook: `navigator.geolocation` with simulation fallback
-- 53 backend tests passing
+### Iteration 12 — RTL component tests (current)
+- Vitest + RTL for Badge, RequireRole, currency/status helpers
+- CI client job runs `npm test` (9 component tests)
 
 ### Next
-- Component tests (RTL), Grafana dashboards
-- Porter/Lalamove remaining gaps from TASKS.md
+- Full OTel SDK + Grafana dashboards, security review, LLD/runbooks
