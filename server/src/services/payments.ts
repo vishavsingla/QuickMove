@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma";
+import { payableAmount } from "./coupons";
 
 export const ensureWallet = async (userId: string) => {
   const existing = await prisma.wallet.findUnique({ where: { userId } });
@@ -65,15 +66,13 @@ export const processTestCard = (token: string): "SUCCEEDED" | "FAILED" => {
   return "SUCCEEDED";
 };
 
-export const createPaymentIntent = async (
-  userId: string,
-  bookingId: string,
-  amount: number
-) => {
+export const createPaymentIntent = async (userId: string, bookingId: string) => {
   const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
   if (!booking || booking.userId !== userId)
     throw new Error("Booking not found");
   if (booking.paymentStatus === "PAID") throw new Error("Already paid");
+
+  const amount = payableAmount(booking.estimatedCost, booking.discountAmount);
 
   const existing = await prisma.paymentIntent.findUnique({
     where: { bookingId },

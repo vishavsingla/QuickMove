@@ -8,6 +8,7 @@ import { RequireRole } from "@/components/RequireRole";
 import { AddressSearch } from "@/components/AddressSearch";
 import { LiveMap, MapMarker } from "@/components/LiveMap";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -25,6 +26,9 @@ function BookInner() {
   const [vehicle, setVehicle] = useState<VehicleType>("CAR");
   const [estimating, setEstimating] = useState(false);
   const [booking, setBooking] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponDesc, setCouponDesc] = useState("");
 
   const routePoints = useMemo(
     () => [pickup, ...stops, dropoff].filter(Boolean) as PlaceResult[],
@@ -63,6 +67,30 @@ function BookInner() {
   }, [pickup, stops, dropoff]);
 
   const selectedQuote = estimate?.quotes.find((q) => q.vehicleType === vehicle);
+  const payable =
+    selectedQuote != null
+      ? Math.max(0, selectedQuote.fare.total - couponDiscount)
+      : 0;
+
+  const applyCoupon = async () => {
+    if (!selectedQuote || !couponInput.trim()) return;
+    try {
+      const r = await api.validateCoupon(couponInput.trim(), selectedQuote.fare.total);
+      if (r.valid && r.discount != null) {
+        setCouponDiscount(r.discount);
+        setCouponDesc(r.description || r.code || "");
+        toast({ title: "Coupon applied", description: `You save ${currency(r.discount)}` });
+      }
+    } catch (err) {
+      setCouponDiscount(0);
+      setCouponDesc("");
+      toast({
+        title: "Invalid coupon",
+        description: err instanceof ApiError ? err.message : "Try another code",
+        variant: "destructive",
+      });
+    }
+  };
 
   const addStop = () => {
     if (stops.length >= 5) {
@@ -93,6 +121,9 @@ function BookInner() {
         dropoffLat: dropoff.lat,
         dropoffLng: dropoff.lng,
         vehicleType: vehicle,
+        ...(couponDiscount > 0 && couponInput.trim()
+          ? { couponCode: couponInput.trim().toUpperCase() }
+          : {}),
         ...(validStops.length
           ? {
               stops: validStops.map((s) => ({
@@ -234,8 +265,34 @@ function BookInner() {
                     <span>Total</span>
                     <span>{currency(selectedQuote.fare.total)}</span>
                   </div>
+                  {couponDiscount > 0 && (
+                    <div className="flex justify-between text-emerald-600">
+                      <span>Coupon ({couponDesc || couponInput})</span>
+                      <span>-{currency(couponDiscount)}</span>
+                    </div>
+                  )}
+                  {couponDiscount > 0 && (
+                    <div className="flex justify-between font-semibold">
+                      <span>You pay</span>
+                      <span>{currency(payable)}</span>
+                    </div>
+                  )}
                 </div>
               )}
+
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Coupon code"
+                  value={couponInput}
+                  onChange={(e) => {
+                    setCouponInput(e.target.value);
+                    setCouponDiscount(0);
+                  }}
+                />
+                <Button type="button" variant="outline" onClick={applyCoupon} disabled={!couponInput.trim()}>
+                  Apply
+                </Button>
+              </div>
 
               <Button className="w-full" size="lg" onClick={book} disabled={booking}>
                 {booking ? (
@@ -243,7 +300,7 @@ function BookInner() {
                 ) : (
                   <ArrowRight className="mr-2 h-4 w-4" />
                 )}
-                Book {VEHICLE_META[vehicle].label} · {selectedQuote ? currency(selectedQuote.fare.total) : ""}
+                Book {VEHICLE_META[vehicle].label} · {selectedQuote ? currency(payable) : ""}
               </Button>
             </CardContent>
           </Card>

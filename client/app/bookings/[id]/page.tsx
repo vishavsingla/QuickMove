@@ -194,8 +194,17 @@ function TrackInner({ id }: { id: string }) {
               <p><span className="text-muted-foreground">To:</span> {booking.dropoffLocation}</p>
               <p className="flex justify-between pt-1">
                 <span className="text-muted-foreground">{booking.estimatedDistance} km · {Math.round(booking.estimatedDuration)} min</span>
-                <span className="font-semibold">{currency(booking.estimatedCost)}</span>
+                <span className="font-semibold">
+                  {currency(
+                    Math.max(0, booking.estimatedCost - (booking.discountAmount || 0))
+                  )}
+                </span>
               </p>
+              {booking.discountAmount ? (
+                <p className="text-xs text-emerald-600">
+                  Coupon {booking.couponCode}: -{currency(booking.discountAmount)} off
+                </p>
+              ) : null}
             </div>
 
             {booking.driver && (
@@ -222,7 +231,12 @@ function TrackInner({ id }: { id: string }) {
 
             {booking.status === "COMPLETED" && booking.paymentStatus !== "PAID" && (
               <div className="rounded-lg border p-3 space-y-2">
-                <p className="text-sm font-medium">Pay {currency(booking.estimatedCost)}</p>
+                <p className="text-sm font-medium">
+                  Pay{" "}
+                  {currency(
+                    Math.max(0, booking.estimatedCost - (booking.discountAmount || 0))
+                  )}
+                </p>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Button
                     className="flex-1"
