@@ -1,9 +1,11 @@
 import http from "http";
 import { createApp } from "./app";
 import { env } from "./config/env";
+import { loadPricingRules } from "./services/pricingRules";
 import { initializeSocketIO, shutdownSocketIO } from "./socket";
 
 const start = async () => {
+  await loadPricingRules();
   const app = createApp();
   const httpServer = http.createServer(app);
 

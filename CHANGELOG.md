@@ -3,7 +3,8 @@
 ## [Unreleased]
 
 ### Added
-- Driver KYC: document upload stubs, admin verify/reject, driver dashboard KYC card
+- Admin live driver map with REST poll + socket `admin:driverLocation`
+- DB-backed `PricingRule` model with admin editor; fares use cached rules
 - Demo coupons `WELCOME50` and `SAVE20` in seed
 - Terraform stubs: VPC, RDS Postgres, ElastiCache Redis (`deploy/terraform/`)
 - Short-lived access tokens (15m default) + 7-day refresh tokens

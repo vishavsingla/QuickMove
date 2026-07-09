@@ -94,6 +94,17 @@ enum VehicleType {
   BIG_TRUCK
 }
 
+model PricingRule {
+  id          String      @id @default(cuid())
+  vehicleType VehicleType @unique
+  base        Float
+  perKm       Float
+  perMin      Float
+  minFare     Float
+  peakSurge   Float       @default(1.25)
+  updatedAt   DateTime    @updatedAt
+}
+
 model Admin {
   id     String @id @default(cuid())
   userId String @unique

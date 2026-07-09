@@ -20,9 +20,10 @@ Last updated: 2026-07-10
 - [x] Coupons + discounted payments
 - [x] Invoice generation + download
 - [x] Driver KYC + document upload stubs
+- [x] Admin live vehicle map + pricing rules UI
 
 ## In progress
-- [ ] Admin live vehicle map + pricing rules UI
+- [ ] Prometheus + OpenTelemetry stubs
 
 ## Backlog — Frontend
 - [ ] Invoice download
