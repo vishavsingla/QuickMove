@@ -10,6 +10,7 @@ import adminRouter from "./routers/admin.router";
 import notificationRouter from "./routers/notification.router";
 import paymentRouter from "./routers/payment.router";
 import userRouter from "./routers/user.router";
+import couponRouter from "./routers/coupon.router";
 import { apiRateLimit } from "./middlewares/rateLimit";
 
 export const createApp = (): Express => {
@@ -36,6 +37,7 @@ export const createApp = (): Express => {
   app.use("/api/notifications", notificationRouter);
   app.use("/api/user", userRouter);
   app.use("/api/payments", paymentRouter);
+  app.use("/api/coupons", couponRouter);
 
   app.use((_req, res) => res.status(404).json({ message: "Not found" }));
 

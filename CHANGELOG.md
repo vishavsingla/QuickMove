@@ -3,7 +3,8 @@
 ## [Unreleased]
 
 ### Added
-- k6 load tests: `deploy/k6/smoke.js`, `auth-flow.js`, `run.sh`
+- Coupon system: validate/apply on booking, admin CRUD, discounted payment intents
+- Demo coupons `WELCOME50` and `SAVE20` in seed
 - Terraform stubs: VPC, RDS Postgres, ElastiCache Redis (`deploy/terraform/`)
 - Short-lived access tokens (15m default) + 7-day refresh tokens
 - Rate limiting: auth (30/15min), geo (60/min), API (300/min)

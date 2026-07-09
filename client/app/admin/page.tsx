@@ -27,6 +27,7 @@ import { RequireRole } from "@/components/RequireRole";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -63,16 +64,25 @@ function AdminInner() {
   const [stats, setStats] = useState<any>(null);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [newCoupon, setNewCoupon] = useState({
+    code: "",
+    discountType: "FLAT",
+    discountValue: "50",
+    minOrderAmount: "100",
+  });
 
   const load = useCallback(async () => {
-    const [s, d, b] = await Promise.all([
+    const [s, d, b, c] = await Promise.all([
       api.adminStats(),
       api.adminDrivers(),
       api.adminBookings(),
+      api.adminCoupons().catch(() => ({ coupons: [] })),
     ]);
     setStats(s);
     setDrivers(d.drivers);
     setBookings(b.bookings);
+    setCoupons(c.coupons);
   }, []);
 
   useEffect(() => {
@@ -82,6 +92,27 @@ function AdminInner() {
   const setStatus = async (id: string, status: string) => {
     await api.setDriverStatus(id, status);
     toast({ title: `Driver ${status.toLowerCase()}` });
+    load();
+  };
+
+  const createCoupon = async () => {
+    try {
+      await api.adminCreateCoupon({
+        code: newCoupon.code,
+        discountType: newCoupon.discountType,
+        discountValue: Number(newCoupon.discountValue),
+        minOrderAmount: Number(newCoupon.minOrderAmount),
+      });
+      toast({ title: "Coupon created" });
+      setNewCoupon({ code: "", discountType: "FLAT", discountValue: "50", minOrderAmount: "100" });
+      load();
+    } catch {
+      toast({ title: "Could not create coupon", variant: "destructive" });
+    }
+  };
+
+  const toggleCoupon = async (id: string) => {
+    await api.adminToggleCoupon(id);
     load();
   };
 
@@ -112,6 +143,7 @@ function AdminInner() {
             Drivers {stats.totals.pendingDrivers > 0 && <Badge variant="warning" className="ml-2">{stats.totals.pendingDrivers}</Badge>}
           </TabsTrigger>
           <TabsTrigger value="bookings">Bookings</TabsTrigger>
+          <TabsTrigger value="coupons">Coupons</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4 grid gap-6 lg:grid-cols-2">
@@ -222,6 +254,79 @@ function AdminInner() {
                         <Badge variant={STATUS_META[b.status].variant}>{STATUS_META[b.status].label}</Badge>
                       </TableCell>
                       <TableCell className="text-right font-medium">{currency(b.estimatedCost)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="coupons" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader><CardTitle className="text-base">Create coupon</CardTitle></CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+              <Input
+                placeholder="CODE"
+                value={newCoupon.code}
+                onChange={(e) => setNewCoupon((p) => ({ ...p, code: e.target.value }))}
+                className="max-w-[120px]"
+              />
+              <select
+                className="h-10 rounded-md border px-2 text-sm"
+                value={newCoupon.discountType}
+                onChange={(e) => setNewCoupon((p) => ({ ...p, discountType: e.target.value }))}
+              >
+                <option value="FLAT">Flat ₹</option>
+                <option value="PERCENT">Percent %</option>
+              </select>
+              <Input
+                type="number"
+                placeholder="Value"
+                value={newCoupon.discountValue}
+                onChange={(e) => setNewCoupon((p) => ({ ...p, discountValue: e.target.value }))}
+                className="max-w-[100px]"
+              />
+              <Input
+                type="number"
+                placeholder="Min order"
+                value={newCoupon.minOrderAmount}
+                onChange={(e) => setNewCoupon((p) => ({ ...p, minOrderAmount: e.target.value }))}
+                className="max-w-[100px]"
+              />
+              <Button onClick={createCoupon} disabled={!newCoupon.code}>Create</Button>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Value</TableHead>
+                    <TableHead>Used</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {coupons.map((c) => (
+                    <TableRow key={c.id}>
+                      <TableCell className="font-mono font-medium">{c.code}</TableCell>
+                      <TableCell>{c.discountType}</TableCell>
+                      <TableCell>{c.discountValue}{c.discountType === "PERCENT" ? "%" : " ₹"}</TableCell>
+                      <TableCell>{c.usedCount}{c.usageLimit ? ` / ${c.usageLimit}` : ""}</TableCell>
+                      <TableCell>
+                        <Badge variant={c.isActive ? "success" : "secondary"}>
+                          {c.isActive ? "Active" : "Off"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="outline" onClick={() => toggleCoupon(c.id)}>
+                          Toggle
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

@@ -117,6 +117,33 @@ async function main() {
   console.log("Admin:  admin@quickmove.dev / password123");
   console.log("User:   user@quickmove.dev / password123");
   console.log("Driver: ravi.driver@quickmove.dev / password123 (and others)");
+  console.log("Coupons: WELCOME50 (₹50 off), SAVE20 (20% off, max ₹200)");
+
+  await prisma.coupon.upsert({
+    where: { code: "WELCOME50" },
+    update: {},
+    create: {
+      code: "WELCOME50",
+      description: "Welcome offer — flat ₹50 off",
+      discountType: "FLAT",
+      discountValue: 50,
+      minOrderAmount: 100,
+      usageLimit: 1000,
+    },
+  });
+  await prisma.coupon.upsert({
+    where: { code: "SAVE20" },
+    update: {},
+    create: {
+      code: "SAVE20",
+      description: "20% off your move",
+      discountType: "PERCENT",
+      discountValue: 20,
+      maxDiscount: 200,
+      minOrderAmount: 150,
+      usageLimit: 500,
+    },
+  });
 }
 
 main()

@@ -5,7 +5,8 @@ export const resetDb = async () => {
   await prisma.notification.deleteMany();
   await prisma.chatMessage.deleteMany();
   await prisma.bookingStop.deleteMany();
-  await prisma.walletTransaction.deleteMany();
+  await prisma.couponRedemption.deleteMany();
+  await prisma.coupon.deleteMany();
   await prisma.paymentIntent.deleteMany();
   await prisma.wallet.deleteMany();
   await prisma.booking.deleteMany();

@@ -7,6 +7,7 @@ import { estimateFare, currentSurge } from "../utils/pricing";
 import { offerBookingToDrivers } from "../services/matching";
 import { notify } from "../services/notifications";
 import { emitToBooking } from "../services/realtime";
+import { applyCouponToBooking } from "../services/coupons";
 
 const bookingInclude: Prisma.BookingInclude = {
   driver: {
@@ -37,6 +38,7 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
       vehicleType,
       scheduledTime,
       stops,
+      couponCode,
     } = req.body;
 
     if (
@@ -115,10 +117,23 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
       include: bookingInclude,
     });
 
-    // Offer to drivers in the background; do not block the response.
-    offerBookingToDrivers(booking.id).catch(() => undefined);
+    let finalBooking = booking;
+    if (couponCode) {
+      try {
+        await applyCouponToBooking(booking.id, couponCode, req.auth!.id);
+        finalBooking = await prisma.booking.findUniqueOrThrow({
+          where: { id: booking.id },
+          include: bookingInclude,
+        });
+      } catch (err: any) {
+        await prisma.booking.delete({ where: { id: booking.id } });
+        return res.status(400).json({ message: err.message });
+      }
+    }
 
-    return res.status(201).json({ message: "Booking created", booking });
+    offerBookingToDrivers(finalBooking.id).catch(() => undefined);
+
+    return res.status(201).json({ message: "Booking created", booking: finalBooking });
   } catch (err: any) {
     return res.status(500).json({ message: "Internal error", error: err.message });
   }

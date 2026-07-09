@@ -59,6 +59,16 @@ cookie).
 | GET | `/bookings` | – | Recent bookings |
 | GET | `/users` | – | Customers |
 | GET | `/stats` | – | `{ totals, bookingsByStatus[], bookingsByVehicle[] }` |
+| GET | `/coupons` | – | List all coupons |
+| POST | `/coupons` | `{ code, discountType, discountValue, minOrderAmount?, maxDiscount?, usageLimit?, validUntil? }` | Create coupon |
+| POST | `/coupons/:id/toggle` | – | Enable/disable coupon |
+
+## Coupons — `/api/coupons` (USER)
+| Method | Path | Body | Notes |
+|---|---|---|---|
+| POST | `/validate` | `{ code, orderAmount }` | → `{ valid, discount, finalAmount }` |
+
+Bookings accept optional `couponCode` on `POST /api/bookings`. Payment intents charge `estimatedCost - discountAmount`.
 
 ## Notifications — `/api/notifications` (any)
 | Method | Path | Notes |

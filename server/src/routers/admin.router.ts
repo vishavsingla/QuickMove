@@ -6,6 +6,11 @@ import {
   listUsers,
   stats,
 } from "../controllers/admin.controller";
+import {
+  listCoupons,
+  createCoupon,
+  toggleCoupon,
+} from "../controllers/coupon.controller";
 import { requireAuth, requireRole } from "../middlewares/auth";
 
 const router = Router();
@@ -17,5 +22,8 @@ router.post("/drivers/:id/status", setDriverStatus);
 router.get("/bookings", listBookings);
 router.get("/users", listUsers);
 router.get("/stats", stats);
+router.get("/coupons", listCoupons);
+router.post("/coupons", createCoupon);
+router.post("/coupons/:id/toggle", toggleCoupon);
 
 export default router;
