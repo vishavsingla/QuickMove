@@ -19,6 +19,7 @@ export function Navbar() {
       ? [
           { href: "/book", label: "Book a move" },
           { href: "/bookings", label: "My bookings" },
+          { href: "/profile", label: "Profile" },
         ]
       : role === "DRIVER"
       ? [{ href: "/driver", label: "Dashboard" }]

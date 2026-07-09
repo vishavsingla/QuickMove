@@ -3,17 +3,14 @@
 ## [Unreleased]
 
 ### Added
-- Next.js frontend: landing page, auth, booking flow with live fare quotes,
-  live map tracking, driver dashboard with job offers + GPS simulation,
-  admin console with charts and driver approval queue
-- AuthProvider + SocketProvider wired to JWT + Socket.io
-- Leaflet-based maps with OpenStreetMap tiles
-- Address search component backed by Nominatim API
-- Notification bell with real-time socket toasts
-
-### Changed
-- Replaced old Redux/cookie auth with JWT localStorage auth
-- Removed legacy `(pages)` route structure
+- User profile API (`GET/PATCH /api/user/profile`)
+- Saved addresses CRUD (`/api/user/addresses`)
+- Profile page with address management
+- Root `docker-compose.yml` (postgres + redis + server + client)
+- Multi-stage Dockerfiles for server and client
+- Deep HLD document with Mermaid architecture, ER, and sequence diagrams
+- Kubernetes manifests under `deploy/k8s/`
+- Root README with quick start guide
 
 ## [0.2.0] — 2026-07-10
 

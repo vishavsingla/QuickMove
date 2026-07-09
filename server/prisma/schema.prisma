@@ -22,6 +22,19 @@ model User {
   driver         Driver?
   admin          Admin?
   notifications  Notification[]
+  savedAddresses SavedAddress[]
+}
+
+model SavedAddress {
+  id        String   @id @default(cuid())
+  userId    String
+  label     String
+  address   String
+  lat       Float
+  lng       Float
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Vehicle {

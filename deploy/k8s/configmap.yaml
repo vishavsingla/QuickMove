@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: quickmove-config
+  namespace: quickmove
+data:
+  API_URL: "https://api.quickmove.example"
+  CLIENT_ORIGIN: "https://quickmove.example"
+  NOMINATIM_URL: "https://nominatim.openstreetmap.org"
+  OSRM_URL: "https://router.project-osrm.org"
