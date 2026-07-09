@@ -35,12 +35,9 @@
 - Wallet ledger, top-up, test gateway payment intents
 - `/wallet` page + checkout on completed bookings
 
-### Iteration 6 — Multi-stop + chat (current)
-- `BookingStop` + `ChatMessage` Prisma models
-- Multi-leg routing via `routeThrough()`
-- Chat API + WebSocket events; `ChatPanel` on user/driver views
-- 38 backend tests passing
+### Iteration 7 — Auth security (current)
+- Refresh token rotation, rate limiting, Helmet headers
+- 40 backend tests passing
 
 ### Next
-- Refresh tokens + rate limiting + security hardening
 - k6 load tests + Terraform stubs

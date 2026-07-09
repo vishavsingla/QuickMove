@@ -9,7 +9,8 @@ export const env = {
     process.env.ACCESS_TOKEN_PRIVATE_KEY || "quickmove_dev_access_secret",
   refreshTokenSecret:
     process.env.REFRESH_TOKEN_PRIVATE_KEY || "quickmove_dev_refresh_secret",
-  accessTokenTtl: process.env.ACCESS_TOKEN_TTL || "7d",
+  accessTokenTtl: process.env.ACCESS_TOKEN_TTL || "15m",
+  refreshTokenTtlDays: Number(process.env.REFRESH_TOKEN_TTL_DAYS || 7),
   redisUrl: process.env.REDIS_URL || "",
   nominatimUrl:
     process.env.NOMINATIM_URL || "https://nominatim.openstreetmap.org",

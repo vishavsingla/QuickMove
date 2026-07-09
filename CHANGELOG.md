@@ -3,7 +3,11 @@
 ## [Unreleased]
 
 ### Added
-- Multi-stop bookings: optional `stops[]` on estimate/create; `BookingStop` model with ordered waypoints
+- Refresh token rotation with `Session` store (`POST /api/auth/refresh`, `/logout`)
+- Short-lived access tokens (15m default) + 7-day refresh tokens
+- Rate limiting: auth (30/15min), geo (60/min), API (300/min)
+- Helmet security headers + 1MB JSON body limit
+- Client auto-refresh on 401 with rotated refresh tokens
 - In-app chat: `GET /api/bookings/:id/chat`, Socket.io `chat:send` / `chat:message` / `chat:typing`
 - `ChatPanel` component on customer tracking and driver active job views
 - Multi-stop UI on `/book` (add/remove up to 5 waypoints)

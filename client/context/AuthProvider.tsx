@@ -45,13 +45,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         );
       })
       .catch(() => {
-        tokenStore.clear();
+        tokenStore.clearAll();
       })
       .finally(() => setLoading(false));
   }, []);
 
   const setSession = (result: AuthResult) => {
     tokenStore.set(result.token);
+    if (result.refreshToken) tokenStore.setRefresh(result.refreshToken);
     setUser(result.user);
     setRole(result.role);
     const dId = result.driverId ?? null;
@@ -60,7 +61,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    tokenStore.clear();
+    const refresh = tokenStore.getRefresh();
+    if (refresh) api.logout(refresh).catch(() => undefined);
+    tokenStore.clearAll();
     localStorage.removeItem(DRIVER_KEY);
     setUser(null);
     setRole(null);
