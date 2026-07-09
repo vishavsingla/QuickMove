@@ -3,7 +3,8 @@
 ## [Unreleased]
 
 ### Added
-- Refresh token rotation with `Session` store (`POST /api/auth/refresh`, `/logout`)
+- k6 load tests: `deploy/k6/smoke.js`, `auth-flow.js`, `run.sh`
+- Terraform stubs: VPC, RDS Postgres, ElastiCache Redis (`deploy/terraform/`)
 - Short-lived access tokens (15m default) + 7-day refresh tokens
 - Rate limiting: auth (30/15min), geo (60/min), API (300/min)
 - Helmet security headers + 1MB JSON body limit
