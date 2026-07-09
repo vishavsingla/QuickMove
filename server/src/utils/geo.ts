@@ -91,3 +91,20 @@ export const routeBetween = async (
     source: "haversine",
   };
 };
+
+/** Sum leg distances for multi-stop routes (pickup → waypoints → dropoff). */
+export const routeThrough = async (points: GeoPoint[]): Promise<RouteResult> => {
+  if (points.length < 2) {
+    return { distanceKm: 0, durationMin: 0, source: "haversine" };
+  }
+  let distanceKm = 0;
+  let durationMin = 0;
+  let source: RouteResult["source"] = "osrm";
+  for (let i = 0; i < points.length - 1; i++) {
+    const leg = await routeBetween(points[i], points[i + 1]);
+    distanceKm += leg.distanceKm;
+    durationMin += leg.durationMin;
+    if (leg.source === "haversine") source = "haversine";
+  }
+  return { distanceKm, durationMin, source };
+};

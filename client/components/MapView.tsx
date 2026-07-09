@@ -15,13 +15,14 @@ export interface MapMarker {
   lat: number;
   lng: number;
   label?: string;
-  kind: "pickup" | "dropoff" | "driver";
+  kind: "pickup" | "dropoff" | "driver" | "waypoint";
 }
 
 const COLORS: Record<MapMarker["kind"], string> = {
   pickup: "#2563eb",
   dropoff: "#16a34a",
   driver: "#f59e0b",
+  waypoint: "#9333ea",
 };
 
 const makeIcon = (kind: MapMarker["kind"]) =>

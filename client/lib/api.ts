@@ -86,6 +86,7 @@ export const api = {
     dropoffLat: number;
     dropoffLng: number;
     vehicleType?: VehicleType;
+    stops?: Array<{ lat: number; lng: number }>;
   }) =>
     request<Estimate>("/api/geo/estimate", {
       method: "POST",
@@ -110,6 +111,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ rating }),
     }),
+  getChatMessages: (id: string) =>
+    request<{ messages: import("./types").ChatMessage[] }>(`/api/bookings/${id}/chat`),
 
   // driver
   driverProfile: () => request<{ driver: Driver }>("/api/driver/profile"),

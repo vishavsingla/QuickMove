@@ -3,7 +3,11 @@
 ## [Unreleased]
 
 ### Added
-- User profile API (`GET/PATCH /api/user/profile`)
+- Multi-stop bookings: optional `stops[]` on estimate/create; `BookingStop` model with ordered waypoints
+- In-app chat: `GET /api/bookings/:id/chat`, Socket.io `chat:send` / `chat:message` / `chat:typing`
+- `ChatPanel` component on customer tracking and driver active job views
+- Multi-stop UI on `/book` (add/remove up to 5 waypoints)
+- Integration tests for multi-stop + chat (38 total backend tests)
 - Saved addresses CRUD (`/api/user/addresses`)
 - Profile page with address management
 - Root `docker-compose.yml` (postgres + redis + server + client)

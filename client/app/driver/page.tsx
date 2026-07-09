@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, MapPin, Navigation, Check, X } from "lucide-react";
 import { api } from "@/lib/api";
 import { RequireRole } from "@/components/RequireRole";
+import { ChatPanel } from "@/components/ChatPanel";
 import { LiveMap, MapMarker } from "@/components/LiveMap";
 import { useSocket } from "@/context/SocketProvider";
 import { useAuth } from "@/context/AuthProvider";
@@ -22,7 +23,7 @@ const NEXT_ACTION: Record<string, { status: string; label: string } | undefined>
 };
 
 function DriverInner() {
-  const { driverId } = useAuth();
+  const { user, driverId } = useAuth();
   const { socket } = useSocket();
   const { toast } = useToast();
   const [driver, setDriver] = useState<Driver | null>(null);
@@ -196,6 +197,9 @@ function DriverInner() {
                     <Navigation className="mr-2 h-4 w-4" />
                     {NEXT_ACTION[activeJob.status]!.label}
                   </Button>
+                )}
+                {user && (
+                  <ChatPanel bookingId={activeJob.id} userId={user.id} role="DRIVER" />
                 )}
               </div>
             ) : (
