@@ -10,6 +10,7 @@ export const env = {
   refreshTokenSecret:
     process.env.REFRESH_TOKEN_PRIVATE_KEY || "quickmove_dev_refresh_secret",
   accessTokenTtl: process.env.ACCESS_TOKEN_TTL || "7d",
+  redisUrl: process.env.REDIS_URL || "",
   nominatimUrl:
     process.env.NOMINATIM_URL || "https://nominatim.openstreetmap.org",
   osrmUrl: process.env.OSRM_URL || "https://router.project-osrm.org",
