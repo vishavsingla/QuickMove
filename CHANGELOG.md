@@ -3,6 +3,8 @@
 ## [Unreleased]
 
 ### Added
+- Full OpenTelemetry Node SDK (OTLP exporter when `OTEL_EXPORTER_OTLP_ENDPOINT` set)
+- Grafana dashboard stub + `deploy/observability/docker-compose.yml` (Prometheus + Grafana)
 - Vitest + React Testing Library component tests (Badge, RequireRole, ui helpers)
 - Real driver GPS via `navigator.geolocation` with simulation fallback when denied
 - Driver earnings dashboard: `GET /api/driver/earnings`, summary on driver page + `/driver/earnings`
