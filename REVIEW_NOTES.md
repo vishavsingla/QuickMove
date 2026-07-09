@@ -15,7 +15,7 @@
 
 ### Open findings (to address in next iterations)
 - Driver GPS on frontend is simulated; real `navigator.geolocation` needed for mobile
-- k6 load tests and Terraform stubs pending
+- k6 load test scripts and Terraform stubs added
 
 ### Security
 - Passwords hashed with bcrypt (cost 10)

@@ -63,8 +63,10 @@ flowchart TB
 | Realtime | `socket.ts` | Live location, status sync |
 
 ## Deployment (target)
-- Local: `docker-compose` (postgres + server + client)
+- Local: `docker-compose` (postgres + redis + server + client)
 - CI: GitHub Actions (`.github/workflows/ci.yml`)
 - Production: Kubernetes manifests under `deploy/k8s/`
+- Load tests: `deploy/k6/run.sh smoke.js` (requires running API + optional seed)
+- IaC stubs: `deploy/terraform/` (VPC, RDS, ElastiCache)
 
 See `docs/` for detailed sequence diagrams and API contracts.
