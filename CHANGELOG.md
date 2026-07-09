@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- Vitest + React Testing Library component tests (Badge, RequireRole, ui helpers)
 - Real driver GPS via `navigator.geolocation` with simulation fallback when denied
 - Driver earnings dashboard: `GET /api/driver/earnings`, summary on driver page + `/driver/earnings`
 - Prometheus `/metrics` with HTTP, booking, and payment counters
