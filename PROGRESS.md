@@ -41,10 +41,10 @@
 - Prometheus `/metrics` + OpenTelemetry bootstrap stub
 - 51 backend tests passing
 
-### Iteration 5 — Quality gates (current)
-- RTL component tests (PR #19), OTel SDK + Grafana (PR #20)
-- Security tests, LLD, runbook; all stop conditions verified
-- 58 backend + 9 client tests; CI green
+### Iteration 6 — Payouts + push (current)
+- Driver bank withdrawal API + earnings page UI (PR #22)
+- Web push stubs: service worker, PushSubscription, subscribe API
+- 63 backend tests; stop conditions re-verified
 
 ### Next
-- Porter/Lalamove: driver payout withdrawal, push notifications
+- Mobile app (React Native) — future scope

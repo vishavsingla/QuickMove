@@ -25,6 +25,7 @@ model User {
   savedAddresses SavedAddress[]
   wallet           Wallet?
   paymentIntents   PaymentIntent[]
+  pushSubscriptions PushSubscription[]
 }
 
 model SavedAddress {
@@ -286,5 +287,17 @@ model Invoice {
   total         Float
   issuedAt      DateTime @default(now())
   booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String
+  p256dh    String?
+  auth      String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint])
 }
 
