@@ -78,6 +78,12 @@ WHERE id=$id AND status='PENDING' AND driverId IS NULL
 3. Credit driver wallet 90% of intent amount as "Trip earnings"
 4. Generate `Invoice` (subtotal, discount, 5% GST tax)
 
+### 4.3 Driver payout withdrawal
+1. Driver saves `bankAccNo` + `ifscCode` via `POST /api/driver/bank`
+2. `POST /api/driver/withdraw { amount }` — min ₹100, debits wallet
+3. Stub instant transfer: `WalletTransaction` DEBIT "Bank withdrawal", status COMPLETED
+4. `GET /api/driver/payouts` — withdrawal history
+
 ## 5. Realtime (Socket.io)
 
 ### 5.1 Rooms
@@ -95,6 +101,12 @@ WHERE id=$id AND status='PENDING' AND driverId IS NULL
 
 ### 5.3 Horizontal scale
 When `REDIS_URL` is set, `@socket.io/redis-adapter` fans events across pods.
+
+### 5.4 Web push (stub)
+1. Client registers `/sw.js` service worker
+2. `PushNotificationSetup` saves stub endpoint via `POST /api/notifications/push/subscribe`
+3. On `notify()`, `sendPushStub()` logs delivery intent for subscribed users
+4. Production: replace stub with VAPID + FCM/Web Push protocol
 
 ## 6. Observability
 
@@ -122,7 +134,7 @@ When `REDIS_URL` is set, `@socket.io/redis-adapter` fans events across pods.
 |-------|------|--------------|
 | `/book` | USER | geo estimate, POST booking |
 | `/bookings/[id]` | USER | tracking, chat, pay, invoice |
-| `/driver` | DRIVER | offers, jobs, KYC, earnings, GPS |
+| `/driver/earnings` | DRIVER | earnings, bank withdraw, payout history |
 | `/admin` | ADMIN | approvals, live map, pricing, coupons |
 
 ### 7.3 Component tests (Vitest + RTL)

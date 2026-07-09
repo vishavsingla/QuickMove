@@ -12,8 +12,17 @@
 - Prometheus metrics + OTel SDK (OTLP when configured)
 - `.env` excluded from git; secrets not committed
 
-### Open findings (to address in next iterations)
-- None blocking after security integration tests
+## 2026-07-10 — Staff review (iteration 6)
+
+### Verified
+- Driver payout withdrawal: bank save, min amount, balance debit, history API
+- Web push stubs: subscribe/unsubscribe/status, auth guard, service worker
+- All stop conditions hold: 64 backend + 9 RTL + 7 e2e, CI green
+- Security: helmet, RBAC, push subscribe requires auth
+
+### Open findings
+- Mobile app (React Native) — future scope
+- Production web push needs VAPID keys and real push gateway
 
 ### Security
 - Passwords hashed with bcrypt (cost 10)

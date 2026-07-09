@@ -44,7 +44,7 @@
 ### Iteration 6 — Payouts + push (current)
 - Driver bank withdrawal API + earnings page UI (PR #22)
 - Web push stubs: service worker, PushSubscription, subscribe API
-- 63 backend tests; stop conditions re-verified
+- 64 backend tests, 9 client RTL tests; CI green
 
 ### Next
 - Mobile app (React Native) — future scope
