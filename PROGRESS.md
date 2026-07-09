@@ -35,9 +35,9 @@
 - Wallet ledger, top-up, test gateway payment intents
 - `/wallet` page + checkout on completed bookings
 
-### Iteration 7 — Auth security (current)
-- Refresh token rotation, rate limiting, Helmet headers
-- 40 backend tests passing
+### Iteration 8 — k6 + Terraform (current)
+- k6 smoke and auth-flow scripts under `deploy/k6/`
+- Terraform stubs for VPC, RDS, Redis
 
 ### Next
-- k6 load tests + Terraform stubs
+- Porter/Lalamove feature parity (coupons, invoices, driver KYC, admin live map)

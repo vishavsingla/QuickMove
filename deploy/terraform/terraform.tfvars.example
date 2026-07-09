@@ -1,0 +1,2 @@
+# Copy to terraform.tfvars and set db_password before apply.
+# This stub is not wired to CI — use for staging/prod bring-up only.

@@ -15,13 +15,13 @@ Last updated: 2026-07-10
 - [x] Redis Socket.io adapter (horizontal scale)
 - [x] Payments + wallet (test gateway + wallet debit, driver earnings)
 - [x] Multi-stop bookings + in-app chat (WebSocket)
+- [x] Refresh tokens + rate limiting + Helmet security headers
+- [x] k6 load test scripts + Terraform stubs
 
 ## In progress
-- [ ] k6 load tests + Terraform stubs
+- [ ] Porter/Lalamove feature parity (coupons, invoices, KYC, admin live map)
 
 ## Backlog — Backend modules
-- [x] Refresh tokens + session hardening
-- [x] Rate limiting (auth, geo, API)
 - [ ] Invoice generation
 - [ ] Driver KYC fields, earnings/payouts
 - [ ] Coupons, pricing rules API
@@ -33,9 +33,9 @@ Last updated: 2026-07-10
 - [ ] Component tests (RTL)
 
 ## Backlog — DevOps
-- [ ] Terraform stub
+- [x] Terraform stub (`deploy/terraform/`)
+- [x] k6 load tests (`deploy/k6/`)
 - [ ] Prometheus/Grafana, OpenTelemetry stubs
-- [ ] k6 load tests
 
 ## Stop conditions
 - [ ] No placeholders / dummy UI
