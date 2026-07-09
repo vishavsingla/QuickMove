@@ -35,9 +35,12 @@
 - Wallet ledger, top-up, test gateway payment intents
 - `/wallet` page + checkout on completed bookings
 
-### Iteration 8 — k6 + Terraform (current)
-- k6 smoke and auth-flow scripts under `deploy/k6/`
-- Terraform stubs for VPC, RDS, Redis
+### Iteration 9 — Coupons + invoices (current)
+- Coupon discounts (FLAT/PERCENT), admin CRUD, payment intent integration
+- Tax invoice generation + HTML download on paid bookings
+- 45 backend tests passing
 
 ### Next
-- Porter/Lalamove feature parity (coupons, invoices, driver KYC, admin live map)
+- Driver KYC flow + document upload stubs
+- Admin live vehicle map + pricing rules UI
+- Prometheus + OpenTelemetry stubs
