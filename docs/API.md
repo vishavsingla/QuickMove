@@ -16,7 +16,9 @@ cookie).
 | POST | `/register/user` | – | `{ name, email, phoneNumber, password }` | → `{ token, user, role }` |
 | POST | `/register/driver` | – | `{ name, email, phoneNumber, password, licenseNumber, vehicleType, licensePlate, city, area, make?, model?, year? }` | Driver created PENDING |
 | POST | `/register/admin` | – | `{ name, email, phoneNumber, password, adminSecret }` | Guarded by `ADMIN_SIGNUP_SECRET` |
-| POST | `/login` | – | `{ email, password }` | → `{ token, user, role, driverId? }` |
+| POST | `/login` | – | `{ email, password }` | → `{ token, refreshToken, user, role, driverId? }` |
+| POST | `/refresh` | – | `{ refreshToken }` | → `{ token, refreshToken, role, driverId? }` — rotates refresh token |
+| POST | `/logout` | – | `{ refreshToken? }` | Revokes session |
 | GET | `/me` | any | – | → `{ user, role }` |
 
 ## Geo & pricing — `/api/geo`

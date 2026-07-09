@@ -33,7 +33,7 @@ flowchart TB
 - **Web client** (`client/`): Next.js 14 App Router, shadcn/ui, Leaflet
 - **Database**: PostgreSQL 15
 - **Geo**: Nominatim geocoding, OSRM routing, haversine fallback, multi-leg `routeThrough`
-- **Auth**: JWT Bearer tokens, role-based guards (USER/DRIVER/ADMIN)
+- **Auth**: JWT access tokens (15m) + opaque refresh tokens with rotation; rate-limited auth endpoints
 - **Realtime**: Socket.io rooms (`user:`, `driver:`, `booking:`) + Redis adapter when `REDIS_URL` set
 - **Payments**: Wallet ledger, test gateway intents
 - **Multi-stop**: `BookingStop` waypoints on bookings; fare from full route
@@ -50,7 +50,7 @@ flowchart TB
 
 | Module | Current location | Responsibility |
 |--------|-----------------|----------------|
-| Auth | `controllers/auth`, `middlewares/auth` | Register, login, JWT, RBAC |
+| Auth | `controllers/auth`, `middlewares/auth`, `services/sessions` | Register, login, JWT, refresh, RBAC |
 | Geo | `controllers/geo`, `utils/geo` | Search, route, distance |
 | Pricing | `utils/pricing` | Fare quotes, surge |
 | Booking | `controllers/booking` | CRUD, cancel, rate, multi-stop |

@@ -1,5 +1,6 @@
 import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
+import helmet from "helmet";
 import { env } from "./config/env";
 import authRouter from "./routers/auth.router";
 import geoRouter from "./routers/geo.router";
@@ -9,11 +10,13 @@ import adminRouter from "./routers/admin.router";
 import notificationRouter from "./routers/notification.router";
 import paymentRouter from "./routers/payment.router";
 import userRouter from "./routers/user.router";
+import { apiRateLimit } from "./middlewares/rateLimit";
 
 export const createApp = (): Express => {
   const app = express();
 
-  app.use(express.json());
+  app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+  app.use(express.json({ limit: "1mb" }));
   app.use(
     cors({
       origin: env.clientOrigin,
@@ -21,6 +24,7 @@ export const createApp = (): Express => {
       optionsSuccessStatus: 200,
     })
   );
+  app.use(apiRateLimit);
 
   app.get("/health", (_req, res) => res.json({ status: "ok", service: "quickmove" }));
 

@@ -2,9 +2,9 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { VehicleType } from "@prisma/client";
 import { prisma } from "../lib/prisma";
-import { signAccessToken } from "../utils/jwt";
 import { AuthRequest } from "../middlewares/auth";
 import { ensureWallet } from "../services/payments";
+import { createSession, refreshSession, revokeSession } from "../services/sessions";
 
 const sanitizeUser = (user: any) => {
   const clone = { ...user };
@@ -12,11 +12,14 @@ const sanitizeUser = (user: any) => {
   return clone;
 };
 
-const issue = (payload: {
+const issueTokens = async (payload: {
   id: string;
   role: "USER" | "DRIVER" | "ADMIN";
   driverId?: string;
-}) => signAccessToken(payload);
+}) => {
+  const { accessToken, refreshToken } = await createSession(payload);
+  return { token: accessToken, refreshToken };
+};
 
 export const registerUser = async (req: Request, res: Response) => {
   try {
@@ -36,10 +39,10 @@ export const registerUser = async (req: Request, res: Response) => {
     });
     await ensureWallet(user.id);
 
-    const token = issue({ id: user.id, role: "USER" });
+    const { token, refreshToken } = await issueTokens({ id: user.id, role: "USER" });
     return res
       .status(201)
-      .json({ message: "Registered", token, user: sanitizeUser(user), role: "USER" });
+      .json({ message: "Registered", token, refreshToken, user: sanitizeUser(user), role: "USER" });
   } catch (err: any) {
     return res.status(500).json({ message: "Internal error", error: err.message });
   }
@@ -118,7 +121,7 @@ export const registerDriver = async (req: Request, res: Response) => {
       return { user, driver };
     });
 
-    const token = issue({
+    const { token, refreshToken } = await issueTokens({
       id: result.user.id,
       role: "DRIVER",
       driverId: result.driver.id,
@@ -126,6 +129,7 @@ export const registerDriver = async (req: Request, res: Response) => {
     return res.status(201).json({
       message: "Driver registered. Awaiting admin approval.",
       token,
+      refreshToken,
       user: sanitizeUser(result.user),
       driver: result.driver,
       role: "DRIVER",
@@ -158,10 +162,10 @@ export const registerAdmin = async (req: Request, res: Response) => {
       return user;
     });
 
-    const token = issue({ id: result.id, role: "ADMIN" });
+    const { token, refreshToken } = await issueTokens({ id: result.id, role: "ADMIN" });
     return res
       .status(201)
-      .json({ message: "Admin registered", token, user: sanitizeUser(result), role: "ADMIN" });
+      .json({ message: "Admin registered", token, refreshToken, user: sanitizeUser(result), role: "ADMIN" });
   } catch (err: any) {
     return res.status(500).json({ message: "Internal error", error: err.message });
   }
@@ -182,7 +186,7 @@ export const login = async (req: Request, res: Response) => {
     const ok = await bcrypt.compare(password, user.hashedPassword);
     if (!ok) return res.status(401).json({ message: "Invalid credentials" });
 
-    const token = issue({
+    const { token, refreshToken } = await issueTokens({
       id: user.id,
       role: user.role,
       driverId: user.driver?.id,
@@ -190,6 +194,7 @@ export const login = async (req: Request, res: Response) => {
     return res.status(200).json({
       message: "Login successful",
       token,
+      refreshToken,
       user: sanitizeUser(user),
       role: user.role,
       driverId: user.driver?.id ?? null,
@@ -207,6 +212,37 @@ export const me = async (req: AuthRequest, res: Response) => {
     });
     if (!user) return res.status(404).json({ message: "User not found" });
     return res.status(200).json({ user: sanitizeUser(user), role: user.role });
+  } catch (err: any) {
+    return res.status(500).json({ message: "Internal error", error: err.message });
+  }
+};
+
+export const refresh = async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken)
+      return res.status(400).json({ message: "refreshToken required" });
+
+    const result = await refreshSession(refreshToken);
+    if (!result) return res.status(401).json({ message: "Invalid or expired refresh token" });
+
+    return res.status(200).json({
+      message: "Token refreshed",
+      token: result.accessToken,
+      refreshToken: result.refreshToken,
+      role: result.role,
+      driverId: result.driverId,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ message: "Internal error", error: err.message });
+  }
+};
+
+export const logout = async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+    if (refreshToken) await revokeSession(refreshToken);
+    return res.status(200).json({ message: "Logged out" });
   } catch (err: any) {
     return res.status(500).json({ message: "Internal error", error: err.message });
   }

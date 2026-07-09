@@ -13,12 +13,21 @@ export const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 const TOKEN_KEY = "quickmove_token";
+const REFRESH_KEY = "quickmove_refresh";
 
 export const tokenStore = {
   get: () =>
     typeof window === "undefined" ? null : localStorage.getItem(TOKEN_KEY),
   set: (t: string) => localStorage.setItem(TOKEN_KEY, t),
   clear: () => localStorage.removeItem(TOKEN_KEY),
+  getRefresh: () =>
+    typeof window === "undefined" ? null : localStorage.getItem(REFRESH_KEY),
+  setRefresh: (t: string) => localStorage.setItem(REFRESH_KEY, t),
+  clearRefresh: () => localStorage.removeItem(REFRESH_KEY),
+  clearAll: () => {
+    tokenStore.clear();
+    tokenStore.clearRefresh();
+  },
 };
 
 export class ApiError extends Error {
@@ -31,7 +40,8 @@ export class ApiError extends Error {
 
 async function request<T>(
   path: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  retry = true
 ): Promise<T> {
   const token = tokenStore.get();
   const res = await fetch(`${API_URL}${path}`, {
@@ -42,6 +52,21 @@ async function request<T>(
       ...(options.headers || {}),
     },
   });
+
+  if (res.status === 401 && retry && tokenStore.getRefresh()) {
+    const refreshed = await fetch(`${API_URL}/api/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken: tokenStore.getRefresh() }),
+    });
+    if (refreshed.ok) {
+      const data = await refreshed.json();
+      tokenStore.set(data.token);
+      if (data.refreshToken) tokenStore.setRefresh(data.refreshToken);
+      return request<T>(path, options, false);
+    }
+    tokenStore.clearAll();
+  }
 
   const text = await res.text();
   const data = text ? JSON.parse(text) : {};
@@ -74,6 +99,16 @@ export const api = {
       body: JSON.stringify(body),
     }),
   me: () => request<{ user: any; role: string }>("/api/auth/me"),
+  refresh: (refreshToken: string) =>
+    request<{ token: string; refreshToken: string }>("/api/auth/refresh", {
+      method: "POST",
+      body: JSON.stringify({ refreshToken }),
+    }),
+  logout: (refreshToken?: string) =>
+    request<{ message: string }>("/api/auth/logout", {
+      method: "POST",
+      body: JSON.stringify({ refreshToken }),
+    }),
 
   // geo
   searchPlaces: (q: string) =>
