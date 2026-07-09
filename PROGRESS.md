@@ -35,12 +35,12 @@
 - Wallet ledger, top-up, test gateway payment intents
 - `/wallet` page + checkout on completed bookings
 
-### Iteration 9 — Coupons + invoices (current)
-- Coupon discounts (FLAT/PERCENT), admin CRUD, payment intent integration
-- Tax invoice generation + HTML download on paid bookings
-- 45 backend tests passing
+### Iteration 10 — KYC, admin ops, observability (current)
+- Driver KYC submit/review with document upload stubs
+- Admin live driver map + DB-backed pricing rules editor
+- Prometheus `/metrics` + OpenTelemetry bootstrap stub
+- 51 backend tests passing
 
 ### Next
-- Driver KYC flow + document upload stubs
-- Admin live vehicle map + pricing rules UI
-- Prometheus + OpenTelemetry stubs
+- Driver earnings dashboard, real GPS, coupons expansion
+- Porter/Lalamove remaining gaps from TASKS.md
