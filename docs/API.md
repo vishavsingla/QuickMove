@@ -47,6 +47,9 @@ cookie).
 | POST | `/location` | `{ lat, lng }` | REST fallback for location |
 | GET | `/offers` | – | PENDING bookings matching vehicle type (empty until APPROVED) |
 | GET | `/jobs` | – | Bookings assigned to this driver |
+| GET | `/earnings` | – | → `{ summary: { balance, totalEarnings, weekEarnings, tripCount, pendingTrips, commissionRate }, transactions[] }` |
+| GET | `/kyc` | – | KYC status + document URLs |
+| POST | `/kyc/submit` | `{ licenseFileName, idFileName }` | Upload stubs → `SUBMITTED` |
 | POST | `/bookings/:id/accept` | – | Atomic claim; `409` if already taken |
 | POST | `/bookings/:id/reject` | – | Dismisses the offer for this driver |
 | POST | `/bookings/:id/status` | `{ status }` | Validated transition ARRIVED/IN_PROGRESS/COMPLETED/CANCELLED |
@@ -56,6 +59,10 @@ cookie).
 |---|---|---|---|
 | GET | `/drivers` | – | All drivers + vehicles + booking counts |
 | POST | `/drivers/:id/status` | `{ status: APPROVED\|REJECTED\|PENDING }` | Also updates the driver's vehicles |
+| POST | `/drivers/:id/kyc` | `{ status: VERIFIED\|REJECTED, note? }` | Review driver KYC |
+| GET | `/drivers/locations` | – | Online drivers with `currentLat`/`currentLng` |
+| GET | `/pricing-rules` | – | Per-vehicle fare rules |
+| PUT | `/pricing-rules` | `{ vehicleType, base, perKm, perMin, minFare, peakSurge }` | Upsert pricing rule |
 | GET | `/bookings` | – | Recent bookings |
 | GET | `/users` | – | Customers |
 | GET | `/stats` | – | `{ totals, bookingsByStatus[], bookingsByVehicle[] }` |
@@ -70,16 +77,30 @@ cookie).
 
 Bookings accept optional `couponCode` on `POST /api/bookings`. Payment intents charge `estimatedCost - discountAmount`.
 
+## Payments — `/api/payments` (USER)
+| Method | Path | Body | Notes |
+|---|---|---|---|
+| GET | `/wallet` | – | → `{ wallet, transactions[] }` |
+| POST | `/wallet/topup` | `{ amount }` | Test-mode instant credit |
+| POST | `/intents` | `{ bookingId }` | Create payment intent for completed booking |
+| POST | `/intents/:id/confirm` | `{ method: wallet\|test_card, token? }` | On success credits driver wallet 90% of fare |
+
+## Chat — `/api/bookings/:id/chat` (USER, DRIVER on assigned booking)
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/` | Message history for booking |
+
 ## Notifications — `/api/notifications` (any)
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/` | → `{ notifications[], unread }` |
 | POST | `/:id/read` | Mark one, or `all` |
 
-## Health
+## Health & metrics
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/health` | → `{ status: "ok", service: "quickmove" }` |
+| GET | `/metrics` | Prometheus text format (HTTP, booking, payment counters) |
 
 ## Socket.io events
 Connect to the API origin. After connecting, the client emits `register`.
@@ -87,7 +108,7 @@ Connect to the API origin. After connecting, the client emits `register`.
 ### Client → server
 | Event | Payload | Purpose |
 |---|---|---|
-| `register` | `{ userId?, driverId? }` | Join `user:{id}` / `driver:{id}` rooms |
+| `register` | `{ userId?, driverId?, isAdmin? }` | Join `user:{id}` / `driver:{id}` / `admin:live` rooms |
 | `booking:join` | `{ bookingId }` | Join `booking:{id}` room |
 | `booking:leave` | `{ bookingId }` | Leave the room |
 | `driver:location` | `{ driverId, lat, lng, bookingId? }` | Stream live location |
@@ -100,6 +121,7 @@ Connect to the API origin. After connecting, the client emits `register`.
 | `job:new` | `{ bookingId, pickupLocation, dropoffLocation, estimatedCost, estimatedDistance, vehicleType, distanceToPickupKm }` | Matched drivers |
 | `booking:update` | full booking object | Customer + booking room |
 | `booking:driverLocation` | `{ bookingId, lat, lng }` | Customer + booking room |
+| `admin:driverLocation` | driver + lat/lng | `admin:live` room |
 | `chat:message` | chat message object | Booking room |
 | `chat:typing` | `{ bookingId, userId, isTyping }` | Booking room (except sender) |
 | `notification` | notification object | Target user/driver |
