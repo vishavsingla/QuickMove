@@ -6,8 +6,9 @@ import { signAccessToken } from "../utils/jwt";
 import { AuthRequest } from "../middlewares/auth";
 
 const sanitizeUser = (user: any) => {
-  const { hashedPassword, ...rest } = user;
-  return rest;
+  const clone = { ...user };
+  delete clone.hashedPassword;
+  return clone;
 };
 
 const issue = (payload: {
