@@ -7,6 +7,7 @@ import bookingRouter from "./routers/booking.router";
 import driverRouter from "./routers/driver.router";
 import adminRouter from "./routers/admin.router";
 import notificationRouter from "./routers/notification.router";
+import paymentRouter from "./routers/payment.router";
 import userRouter from "./routers/user.router";
 
 export const createApp = (): Express => {
@@ -30,6 +31,7 @@ export const createApp = (): Express => {
   app.use("/api/admin", adminRouter);
   app.use("/api/notifications", notificationRouter);
   app.use("/api/user", userRouter);
+  app.use("/api/payments", paymentRouter);
 
   app.use((_req, res) => res.status(404).json({ message: "Not found" }));
 
