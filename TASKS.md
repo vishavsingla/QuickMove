@@ -13,9 +13,10 @@ Last updated: 2026-07-10
 - [x] Root README
 - [x] Playwright e2e (7 tests) + CI job
 - [x] Redis Socket.io adapter (horizontal scale)
+- [x] Payments + wallet (test gateway + wallet debit, driver earnings)
 
 ## In progress
-- [ ] Payments + wallet flows
+- [ ] Multi-stop bookings + in-app chat
 
 ## Backlog — Backend modules
 - [ ] Redis: socket adapter, pub/sub, caching

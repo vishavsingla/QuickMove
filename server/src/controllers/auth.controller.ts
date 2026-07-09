@@ -4,6 +4,7 @@ import { VehicleType } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { signAccessToken } from "../utils/jwt";
 import { AuthRequest } from "../middlewares/auth";
+import { ensureWallet } from "../services/payments";
 
 const sanitizeUser = (user: any) => {
   const clone = { ...user };
@@ -33,6 +34,7 @@ export const registerUser = async (req: Request, res: Response) => {
     const user = await prisma.user.create({
       data: { name, email, phoneNumber, hashedPassword, role: "USER" },
     });
+    await ensureWallet(user.id);
 
     const token = issue({ id: user.id, role: "USER" });
     return res

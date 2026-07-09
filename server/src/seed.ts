@@ -46,7 +46,7 @@ async function main() {
   });
 
   // Demo customer
-  await prisma.user.upsert({
+  const demoUser = await prisma.user.upsert({
     where: { email: "user@quickmove.dev" },
     update: {},
     create: {
@@ -56,6 +56,11 @@ async function main() {
       hashedPassword: password,
       role: "USER",
     },
+  });
+  await prisma.wallet.upsert({
+    where: { userId: demoUser.id },
+    update: { balance: 2000 },
+    create: { userId: demoUser.id, balance: 2000 },
   });
 
   // Approved drivers with live-ish locations
