@@ -4,15 +4,18 @@ Last updated: 2026-07-10
 
 ## Done
 - [x] Design docs + API contract (PR #1)
-- [x] Backend core: auth, geo/pricing, bookings, driver matching, admin, sockets (PR #2)
-- [x] Backend unit + integration tests (31 tests, Postgres)
-- [x] Frontend rebuild: landing, auth, book flow, live tracking, driver dashboard, admin console
+- [x] Backend core + tests (PR #2)
+- [x] Frontend rebuild + CI (PR #3)
+- [x] User profile + saved addresses API
+- [x] Docker-compose full stack + Dockerfiles
+- [x] Deep HLD with Mermaid diagrams
+- [x] Kubernetes manifests (deploy/k8s)
+- [x] Root README
 
 ## In progress
-- [ ] Merge frontend PR + CI workflow
-- [ ] Deep HLD/LLD docs with Mermaid diagrams
-- [ ] Full docker-compose stack (postgres + server + client)
-- [ ] GitHub Actions: lint, typecheck, build, server tests, client build
+- [ ] Merge feat/end-to-end-platform PR
+- [ ] Playwright e2e tests
+- [ ] Redis Socket.io adapter
 
 ## Backlog — Backend modules
 - [ ] Redis: socket adapter, pub/sub, caching
