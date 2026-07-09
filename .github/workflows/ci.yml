@@ -65,3 +65,55 @@ jobs:
       - run: npm run build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:5001
+
+  e2e:
+    name: E2E — Playwright
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: quickmove
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/quickmove?schema=public
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/quickmove?schema=public
+      ACCESS_TOKEN_PRIVATE_KEY: ci_access_secret
+      REFRESH_TOKEN_PRIVATE_KEY: ci_refresh_secret
+      ADMIN_SIGNUP_SECRET: quickmove-admin
+      CLIENT_ORIGIN: http://localhost:3000
+      NEXT_PUBLIC_API_URL: http://localhost:5001
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install server deps
+        working-directory: server
+        run: npm ci && npx prisma generate && npx prisma db push && npm run seed
+      - name: Start API
+        working-directory: server
+        run: npm run build && node dist/index.js &
+      - name: Install client + Playwright
+        working-directory: client
+        run: npm ci && npx playwright install chromium --with-deps
+      - name: Build and start web
+        working-directory: client
+        run: npm run build && npm start &
+      - name: Wait for services
+        run: |
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:5001/health && curl -sf http://localhost:3000 && break
+            sleep 2
+          done
+      - name: Run Playwright
+        working-directory: client
+        run: npm run test:e2e
