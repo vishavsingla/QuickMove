@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma";
 import { payableAmount } from "./coupons";
+import { ensureInvoice } from "./invoices";
 
 export const ensureWallet = async (userId: string) => {
   const existing = await prisma.wallet.findUnique({ where: { userId } });
@@ -154,6 +155,10 @@ export const confirmPayment = async (
     }
     return paid;
   });
+
+  if (intent.bookingId) {
+    await ensureInvoice(intent.bookingId).catch(() => undefined);
+  }
 
   return result;
 };

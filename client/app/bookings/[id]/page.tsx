@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { Loader2, Phone, Star, XCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, Phone, Star, XCircle, CheckCircle2, Download } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { RequireRole } from "@/components/RequireRole";
 import { LiveMap, MapMarker } from "@/components/LiveMap";
@@ -128,6 +128,21 @@ function TrackInner({ id }: { id: string }) {
       });
     } finally {
       setPaying(false);
+    }
+  };
+
+  const downloadInvoice = async () => {
+    try {
+      const { invoice, html } = await api.getInvoice(id);
+      const blob = new Blob([html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${invoice.invoiceNumber}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast({ title: "Could not download invoice", variant: "destructive" });
     }
   };
 
@@ -258,7 +273,12 @@ function TrackInner({ id }: { id: string }) {
             )}
 
             {booking.status === "COMPLETED" && booking.paymentStatus === "PAID" && (
-              <p className="text-center text-sm text-emerald-600">Payment complete ✓</p>
+              <div className="space-y-2">
+                <p className="text-center text-sm text-emerald-600">Payment complete ✓</p>
+                <Button variant="outline" className="w-full" onClick={downloadInvoice}>
+                  <Download className="mr-2 h-4 w-4" /> Download invoice
+                </Button>
+              </div>
             )}
 
             {booking.status === "COMPLETED" && (
