@@ -8,11 +8,11 @@
 - Client build passes typecheck + lint
 - Backend 51/51 tests green
 - Driver KYC, coupons, invoices, admin live map, pricing rules
-- Prometheus metrics + OTel stub
+- Prometheus metrics + OTel SDK (OTLP when configured)
 - `.env` excluded from git; secrets not committed
 
 ### Open findings (to address in next iterations)
-- Full OTel SDK wiring when collector is available
+- None blocking after security integration tests
 
 ### Security
 - Passwords hashed with bcrypt (cost 10)

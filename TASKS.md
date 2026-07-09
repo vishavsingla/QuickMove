@@ -34,10 +34,11 @@ Last updated: 2026-07-10
 - [x] Terraform stub (`deploy/terraform/`)
 - [x] k6 load tests (`deploy/k6/`)
 - [x] Prometheus scrape config + `/metrics` endpoint
+- [x] OpenTelemetry SDK + Grafana dashboard stubs
 
 ## Stop conditions
 - [ ] No placeholders / dummy UI
 - [ ] All tests green in CI
 - [ ] k8s manifests ready
-- [ ] Deep docs complete
-- [ ] Security review passed
+- [x] Deep docs complete (HLD, LLD, API, RUNBOOK)
+- [x] Security review passed (helmet headers, RBAC, no hash leak tests)

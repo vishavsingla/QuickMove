@@ -53,7 +53,7 @@ flowchart TB
 | Events | Synchronous in handlers | Kafka topics for booking lifecycle |
 | Search | Nominatim proxy | Self-hosted Nominatim + ES for drivers |
 | Payments | Modelled, unpaid | Stripe/Razorpay test + wallet ledger |
-| Observability | Console logs | OTel + Prometheus + Grafana |
+| Observability | Console logs | OTel SDK + Prometheus + Grafana stubs |
 
 ## 3. Component responsibilities
 

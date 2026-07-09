@@ -25,6 +25,11 @@
   "license": "ISC",
   "description": "QuickMove logistics platform API",
   "dependencies": {
+    "@opentelemetry/auto-instrumentations-node": "^0.78.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.220.0",
+    "@opentelemetry/resources": "^2.9.0",
+    "@opentelemetry/sdk-node": "^0.220.0",
+    "@opentelemetry/semantic-conventions": "^1.43.0",
     "@prisma/client": "^5.20.0",
     "@socket.io/redis-adapter": "^8.3.0",
     "axios": "^1.7.7",
