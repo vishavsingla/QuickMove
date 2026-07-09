@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma";
 import { payableAmount } from "./coupons";
+import { paymentsSucceededTotal } from "../observability/metrics";
 import { ensureInvoice } from "./invoices";
 
 export const ensureWallet = async (userId: string) => {
@@ -159,6 +160,8 @@ export const confirmPayment = async (
   if (intent.bookingId) {
     await ensureInvoice(intent.bookingId).catch(() => undefined);
   }
+
+  paymentsSucceededTotal.inc();
 
   return result;
 };

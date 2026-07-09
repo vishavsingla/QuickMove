@@ -21,20 +21,19 @@ Last updated: 2026-07-10
 - [x] Invoice generation + download
 - [x] Driver KYC + document upload stubs
 - [x] Admin live vehicle map + pricing rules UI
+- [x] Prometheus metrics + OpenTelemetry stubs
 
 ## In progress
-- [ ] Prometheus + OpenTelemetry stubs
+- [ ] Remaining Porter/Lalamove parity gaps
 
 ## Backlog — Frontend
-- [ ] Invoice download
 - [ ] Driver earnings dashboard
-- [ ] Admin live vehicle map, pricing rules editor
 - [ ] Component tests (RTL)
 
 ## Backlog — DevOps
 - [x] Terraform stub (`deploy/terraform/`)
 - [x] k6 load tests (`deploy/k6/`)
-- [ ] Prometheus/Grafana, OpenTelemetry stubs
+- [x] Prometheus scrape config + `/metrics` endpoint
 
 ## Stop conditions
 - [ ] No placeholders / dummy UI
