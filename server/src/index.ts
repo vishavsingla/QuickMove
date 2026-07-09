@@ -3,8 +3,10 @@ import { createApp } from "./app";
 import { env } from "./config/env";
 import { loadPricingRules } from "./services/pricingRules";
 import { initializeSocketIO, shutdownSocketIO } from "./socket";
+import { initTracing, shutdownTracing } from "./observability/tracing";
 
 const start = async () => {
+  initTracing();
   await loadPricingRules();
   const app = createApp();
   const httpServer = http.createServer(app);
@@ -16,6 +18,7 @@ const start = async () => {
   });
 
   const shutdown = async () => {
+    await shutdownTracing();
     await shutdownSocketIO();
     httpServer.close();
     process.exit(0);

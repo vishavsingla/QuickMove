@@ -12,6 +12,8 @@ import paymentRouter from "./routers/payment.router";
 import userRouter from "./routers/user.router";
 import couponRouter from "./routers/coupon.router";
 import { apiRateLimit } from "./middlewares/rateLimit";
+import { metricsMiddleware } from "./middlewares/metrics";
+import { metricsHandler } from "./controllers/metrics.controller";
 
 export const createApp = (): Express => {
   const app = express();
@@ -26,8 +28,10 @@ export const createApp = (): Express => {
     })
   );
   app.use(apiRateLimit);
+  app.use(metricsMiddleware);
 
   app.get("/health", (_req, res) => res.json({ status: "ok", service: "quickmove" }));
+  app.get("/metrics", metricsHandler);
 
   app.use("/api/auth", authRouter);
   app.use("/api/geo", geoRouter);

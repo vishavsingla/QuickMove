@@ -3,8 +3,11 @@
 ## [Unreleased]
 
 ### Added
+- Prometheus `/metrics` with HTTP, booking, and payment counters
+- OpenTelemetry bootstrap stub + `deploy/observability/prometheus.yml`
 - Admin live driver map with REST poll + socket `admin:driverLocation`
 - DB-backed `PricingRule` model with admin editor; fares use cached rules
+- Driver KYC: document upload stubs, admin verify/reject, driver dashboard KYC card
 - Demo coupons `WELCOME50` and `SAVE20` in seed
 - Terraform stubs: VPC, RDS Postgres, ElastiCache Redis (`deploy/terraform/`)
 - Short-lived access tokens (15m default) + 7-day refresh tokens

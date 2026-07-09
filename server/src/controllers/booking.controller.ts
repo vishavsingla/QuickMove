@@ -8,6 +8,7 @@ import { offerBookingToDrivers } from "../services/matching";
 import { notify } from "../services/notifications";
 import { emitToBooking } from "../services/realtime";
 import { applyCouponToBooking } from "../services/coupons";
+import { bookingsCreatedTotal } from "../observability/metrics";
 
 const bookingInclude: Prisma.BookingInclude = {
   driver: {
@@ -132,6 +133,7 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
     }
 
     offerBookingToDrivers(finalBooking.id).catch(() => undefined);
+    bookingsCreatedTotal.inc();
 
     return res.status(201).json({ message: "Booking created", booking: finalBooking });
   } catch (err: any) {
