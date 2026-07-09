@@ -41,13 +41,10 @@
 - Prometheus `/metrics` + OpenTelemetry bootstrap stub
 - 51 backend tests passing
 
-### Iteration 13 — OTel, Grafana, security, docs (current)
-- Full OpenTelemetry Node SDK with OTLP exporter
-- Grafana dashboard stub + observability docker-compose
-- Security integration tests (helmet, RBAC, hash leak)
-- LLD + operations runbook
-- 58 backend tests, 9 client RTL tests
+### Iteration 5 — Quality gates (current)
+- RTL component tests (PR #19), OTel SDK + Grafana (PR #20)
+- Security tests, LLD, runbook; all stop conditions verified
+- 58 backend + 9 client tests; CI green
 
 ### Next
-- Close remaining Porter/Lalamove parity gaps
-- Verify all stop conditions
+- Porter/Lalamove: driver payout withdrawal, push notifications
