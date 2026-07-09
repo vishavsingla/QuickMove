@@ -5,6 +5,9 @@ import {
   listBookings,
   listUsers,
   stats,
+  driverLocations,
+  listPricingRules,
+  updatePricingRule,
 } from "../controllers/admin.controller";
 import { reviewKyc } from "../controllers/kyc.controller";
 import {
@@ -24,6 +27,9 @@ router.post("/drivers/:id/kyc", reviewKyc);
 router.get("/bookings", listBookings);
 router.get("/users", listUsers);
 router.get("/stats", stats);
+router.get("/drivers/locations", driverLocations);
+router.get("/pricing-rules", listPricingRules);
+router.put("/pricing-rules", updatePricingRule);
 router.get("/coupons", listCoupons);
 router.post("/coupons", createCoupon);
 router.post("/coupons/:id/toggle", toggleCoupon);
