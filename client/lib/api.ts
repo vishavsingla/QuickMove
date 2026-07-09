@@ -259,4 +259,29 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ method, token }),
     }),
+
+  validateCoupon: (code: string, orderAmount: number) =>
+    request<{
+      valid: boolean;
+      code?: string;
+      description?: string;
+      discount?: number;
+      finalAmount?: number;
+      message?: string;
+    }>("/api/coupons/validate", {
+      method: "POST",
+      body: JSON.stringify({ code, orderAmount }),
+    }),
+
+  adminCoupons: () =>
+    request<{ coupons: any[] }>("/api/admin/coupons"),
+  adminCreateCoupon: (body: Record<string, unknown>) =>
+    request<{ coupon: any }>("/api/admin/coupons", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  adminToggleCoupon: (id: string) =>
+    request<{ coupon: any }>(`/api/admin/coupons/${id}/toggle`, {
+      method: "POST",
+    }),
 };

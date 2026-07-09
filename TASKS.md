@@ -17,14 +17,10 @@ Last updated: 2026-07-10
 - [x] Multi-stop bookings + in-app chat (WebSocket)
 - [x] Refresh tokens + rate limiting + Helmet security headers
 - [x] k6 load test scripts + Terraform stubs
+- [x] Coupons + discounted payments
 
 ## In progress
-- [ ] Porter/Lalamove feature parity (coupons, invoices, KYC, admin live map)
-
-## Backlog — Backend modules
-- [ ] Invoice generation
-- [ ] Driver KYC fields, earnings/payouts
-- [ ] Coupons, pricing rules API
+- [ ] Invoice generation + download
 
 ## Backlog — Frontend
 - [ ] Invoice download

@@ -57,6 +57,8 @@ export interface Booking {
   dropoffLng: number;
   vehicleType: VehicleType;
   estimatedCost: number;
+  discountAmount?: number;
+  couponCode?: string | null;
   estimatedDistance: number;
   estimatedDuration: number;
   status: BookingStatus;

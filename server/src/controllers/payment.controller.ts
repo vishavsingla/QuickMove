@@ -37,11 +37,7 @@ export const createIntent = async (req: AuthRequest, res: Response) => {
     if (!bookingId) return res.status(400).json({ message: "bookingId required" });
     const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
     if (!booking) return res.status(404).json({ message: "Booking not found" });
-    const intent = await createPaymentIntent(
-      req.auth!.id,
-      bookingId,
-      booking.estimatedCost
-    );
+    const intent = await createPaymentIntent(req.auth!.id, bookingId);
     return res.status(201).json({ intent });
   } catch (err: any) {
     return res.status(400).json({ message: err.message });
