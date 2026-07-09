@@ -12,7 +12,6 @@
 - `.env` excluded from git; secrets not committed
 
 ### Open findings (to address in next iterations)
-- Driver GPS on frontend is simulated; real `navigator.geolocation` needed for mobile
 - Full OTel SDK wiring when collector is available
 
 ### Security
