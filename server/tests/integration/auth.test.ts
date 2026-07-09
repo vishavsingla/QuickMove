@@ -44,6 +44,7 @@ describe("auth", () => {
       .send({ email: user.email, password: user.password });
     expect(ok.status).toBe(200);
     expect(ok.body.token).toBeTruthy();
+    expect(ok.body.refreshToken).toBeTruthy();
 
     const bad = await request(app)
       .post("/api/auth/login")

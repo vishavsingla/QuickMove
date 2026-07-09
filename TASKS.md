@@ -17,11 +17,11 @@ Last updated: 2026-07-10
 - [x] Multi-stop bookings + in-app chat (WebSocket)
 
 ## In progress
-- [ ] Refresh tokens + rate limiting + security hardening
+- [ ] k6 load tests + Terraform stubs
 
 ## Backlog — Backend modules
-- [ ] Refresh tokens + session hardening
-- [ ] Rate limiting, audit logs
+- [x] Refresh tokens + session hardening
+- [x] Rate limiting (auth, geo, API)
 - [ ] Invoice generation
 - [ ] Driver KYC fields, earnings/payouts
 - [ ] Coupons, pricing rules API
