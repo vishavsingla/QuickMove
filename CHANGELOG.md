@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 ### Added
-- Tax invoices: `Invoice` model, `GET /api/bookings/:id/invoice`, auto-issue on payment, HTML download
+- Driver KYC: document upload stubs, admin verify/reject, driver dashboard KYC card
 - Demo coupons `WELCOME50` and `SAVE20` in seed
 - Terraform stubs: VPC, RDS Postgres, ElastiCache Redis (`deploy/terraform/`)
 - Short-lived access tokens (15m default) + 7-day refresh tokens

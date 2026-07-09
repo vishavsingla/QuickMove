@@ -178,6 +178,21 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ status }),
     }),
+  getDriverKyc: () =>
+    request<{
+      kyc: {
+        kycStatus: string;
+        licenseDocUrl: string | null;
+        idDocUrl: string | null;
+        kycSubmittedAt: string | null;
+        kycNote: string | null;
+      };
+    }>("/api/driver/kyc"),
+  submitDriverKyc: (licenseFileName: string, idFileName: string) =>
+    request<{ message: string; kyc: any }>("/api/driver/kyc/submit", {
+      method: "POST",
+      body: JSON.stringify({ licenseFileName, idFileName }),
+    }),
 
   // admin
   adminDrivers: () => request<{ drivers: Driver[] }>("/api/admin/drivers"),
@@ -285,5 +300,10 @@ export const api = {
   adminToggleCoupon: (id: string) =>
     request<{ coupon: any }>(`/api/admin/coupons/${id}/toggle`, {
       method: "POST",
+    }),
+  reviewDriverKyc: (driverId: string, status: "VERIFIED" | "REJECTED", note?: string) =>
+    request<{ driver: Driver }>(`/api/admin/drivers/${driverId}/kyc`, {
+      method: "POST",
+      body: JSON.stringify({ status, note }),
     }),
 };

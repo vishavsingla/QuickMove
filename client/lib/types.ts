@@ -45,6 +45,10 @@ export interface Driver {
   status?: string;
   isAvailable?: boolean;
   totalTrips?: number;
+  kycStatus?: string;
+  licenseDocUrl?: string | null;
+  idDocUrl?: string | null;
+  kycNote?: string | null;
 }
 
 export interface Booking {
