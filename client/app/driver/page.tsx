@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, MapPin, Navigation, Check, X } from "lucide-react";
+import { Loader2, MapPin, Navigation, Check, X, Upload, Shield } from "lucide-react";
 import { api } from "@/lib/api";
 import { RequireRole } from "@/components/RequireRole";
 import { ChatPanel } from "@/components/ChatPanel";
@@ -30,6 +30,10 @@ function DriverInner() {
   const [offers, setOffers] = useState<Booking[]>([]);
   const [jobs, setJobs] = useState<Booking[]>([]);
   const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [kyc, setKyc] = useState<any>(null);
+  const [licenseFile, setLicenseFile] = useState<File | null>(null);
+  const [idFile, setIdFile] = useState<File | null>(null);
+  const [kycSubmitting, setKycSubmitting] = useState(false);
   const posRef = useRef(pos);
   posRef.current = pos;
 
@@ -38,14 +42,16 @@ function DriverInner() {
   );
 
   const refresh = useCallback(async () => {
-    const [p, o, j] = await Promise.all([
+    const [p, o, j, k] = await Promise.all([
       api.driverProfile(),
       api.driverOffers().catch(() => ({ offers: [] })),
       api.driverJobs(),
+      api.getDriverKyc().catch(() => null),
     ]);
     setDriver(p.driver);
     setOffers(o.offers);
     setJobs(j.jobs);
+    if (k) setKyc(k.kyc);
     if (p.driver.currentLat && p.driver.currentLng && !posRef.current)
       setPos({ lat: p.driver.currentLat, lng: p.driver.currentLng });
   }, []);
@@ -96,6 +102,23 @@ function DriverInner() {
   const toggleAvailability = async (value: boolean) => {
     const r = await api.setAvailability(value);
     setDriver(r.driver);
+  };
+
+  const submitKyc = async () => {
+    if (!licenseFile || !idFile) {
+      toast({ title: "Upload both documents", variant: "destructive" });
+      return;
+    }
+    setKycSubmitting(true);
+    try {
+      const r = await api.submitDriverKyc(licenseFile.name, idFile.name);
+      setKyc(r.kyc);
+      toast({ title: "KYC submitted for review" });
+    } catch {
+      toast({ title: "KYC submission failed", variant: "destructive" });
+    } finally {
+      setKycSubmitting(false);
+    }
   };
 
   const accept = async (id: string) => {
@@ -166,6 +189,72 @@ function DriverInner() {
           </CardContent>
         </Card>
       )}
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Shield className="h-5 w-5" /> KYC verification
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <Badge
+            variant={
+              kyc?.kycStatus === "VERIFIED"
+                ? "success"
+                : kyc?.kycStatus === "REJECTED"
+                  ? "destructive"
+                  : kyc?.kycStatus === "SUBMITTED"
+                    ? "warning"
+                    : "secondary"
+            }
+          >
+            {kyc?.kycStatus ?? "NOT_SUBMITTED"}
+          </Badge>
+          {kyc?.kycStatus === "VERIFIED" && (
+            <p className="text-emerald-600">Your documents are verified.</p>
+          )}
+          {kyc?.kycStatus === "SUBMITTED" && (
+            <p className="text-muted-foreground">Under admin review — usually within 24 hours.</p>
+          )}
+          {kyc?.kycStatus === "REJECTED" && (
+            <p className="text-destructive">{kyc.kycNote || "Please re-upload your documents."}</p>
+          )}
+          {(!kyc || kyc.kycStatus === "NOT_SUBMITTED" || kyc.kycStatus === "REJECTED") && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="flex cursor-pointer flex-col gap-1 rounded-lg border border-dashed p-3">
+                <span className="font-medium">Driving license</span>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  className="text-xs"
+                  onChange={(e) => setLicenseFile(e.target.files?.[0] ?? null)}
+                />
+              </label>
+              <label className="flex cursor-pointer flex-col gap-1 rounded-lg border border-dashed p-3">
+                <span className="font-medium">Government ID</span>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  className="text-xs"
+                  onChange={(e) => setIdFile(e.target.files?.[0] ?? null)}
+                />
+              </label>
+              <Button
+                className="sm:col-span-2"
+                onClick={submitKyc}
+                disabled={kycSubmitting || !licenseFile || !idFile}
+              >
+                {kycSubmitting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="mr-2 h-4 w-4" />
+                )}
+                Submit for verification
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Active job */}
