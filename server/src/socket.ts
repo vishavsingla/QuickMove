@@ -1,21 +1,16 @@
 import { Server } from "socket.io";
+import { createAdapter } from "@socket.io/redis-adapter";
+import { createClient, RedisClientType } from "redis";
 import http from "http";
 import { env } from "./config/env";
 import { prisma } from "./lib/prisma";
 
 export let io: Server | null = null;
+let pubClient: RedisClientType | null = null;
+let subClient: RedisClientType | null = null;
 
-export const initializeSocketIO = (server: http.Server) => {
-  io = new Server(server, {
-    cors: {
-      origin: env.clientOrigin,
-      methods: ["GET", "POST"],
-      credentials: true,
-    },
-  });
-
-  io.on("connection", (socket) => {
-    // Client identifies itself so we can target user/driver rooms.
+const attachHandlers = (server: Server) => {
+  server.on("connection", (socket) => {
     socket.on(
       "register",
       ({ userId, driverId }: { userId?: string; driverId?: string }) => {
@@ -32,7 +27,6 @@ export const initializeSocketIO = (server: http.Server) => {
       if (bookingId) socket.leave(`booking:${bookingId}`);
     });
 
-    // Live driver location during an active job.
     socket.on(
       "driver:location",
       async ({
@@ -58,21 +52,67 @@ export const initializeSocketIO = (server: http.Server) => {
               where: { id: bookingId },
               data: { driverLat: lat, driverLng: lng },
             });
-            io?.to(`booking:${bookingId}`)
+            server
+              .to(`booking:${bookingId}`)
               .to(`user:${booking.userId}`)
               .emit("booking:driverLocation", { bookingId, lat, lng });
           }
-        } catch (e) {
-          // ignore transient errors from stale bookings/drivers
+        } catch {
+          /* stale booking/driver */
         }
       }
     );
   });
+};
 
-  return io;
+/**
+ * When REDIS_URL is set, wires the Socket.io Redis adapter so events fan out
+ * across multiple API pods. Without Redis the server runs in single-node mode.
+ */
+export const initializeSocketIO = async (server: http.Server): Promise<Server> => {
+  const socketServer = new Server(server, {
+    cors: {
+      origin: env.clientOrigin,
+      methods: ["GET", "POST"],
+      credentials: true,
+    },
+  });
+
+  if (env.redisUrl) {
+    pubClient = createClient({ url: env.redisUrl });
+    subClient = pubClient.duplicate();
+    pubClient.on("error", (err) => console.error("Redis pub error", err));
+    subClient.on("error", (err) => console.error("Redis sub error", err));
+    await Promise.all([pubClient.connect(), subClient.connect()]);
+    socketServer.adapter(createAdapter(pubClient, subClient));
+    console.log(`Socket.io using Redis adapter at ${env.redisUrl}`);
+  } else {
+    console.log("Socket.io running in single-node mode (no REDIS_URL)");
+  }
+
+  attachHandlers(socketServer);
+  io = socketServer;
+  return socketServer;
+};
+
+export const shutdownSocketIO = async () => {
+  if (io) {
+    await new Promise<void>((resolve) => io!.close(() => resolve()));
+    io = null;
+  }
+  if (subClient) {
+    await subClient.quit();
+    subClient = null;
+  }
+  if (pubClient) {
+    await pubClient.quit();
+    pubClient = null;
+  }
 };
 
 export const getIO = (): Server => {
   if (!io) throw new Error("Socket.IO not initialized");
   return io;
 };
+
+export const isRedisAdapterEnabled = () => Boolean(pubClient);
