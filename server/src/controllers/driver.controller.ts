@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { AuthRequest } from "../middlewares/auth";
 import { notify } from "../services/notifications";
 import { emitToBooking, emitToUser } from "../services/realtime";
+import { ensureWallet } from "../services/payments";
 
 const driverId = (req: AuthRequest) => req.auth?.driverId;
 
@@ -173,4 +174,69 @@ export const updateJobStatus = async (req: AuthRequest, res: Response) => {
   emitToBooking(booking.id, "booking:update", updated);
 
   return res.status(200).json({ message: "Status updated", booking: updated });
+};
+
+export const getEarnings = async (req: AuthRequest, res: Response) => {
+  const id = driverId(req);
+  if (!id) return res.status(400).json({ message: "Not a driver account" });
+
+  const driver = await prisma.driver.findUnique({ where: { id } });
+  if (!driver) return res.status(404).json({ message: "Driver not found" });
+
+  const wallet = await ensureWallet(driver.userId);
+  const transactions = await prisma.walletTransaction.findMany({
+    where: { walletId: wallet.id, description: "Trip earnings" },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
+
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+
+  const totalEarnings = transactions.reduce((sum, t) => sum + t.amount, 0);
+  const weekEarnings = transactions
+    .filter((t) => t.createdAt >= weekAgo)
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const bookingIds = transactions
+    .map((t) => t.reference)
+    .filter((r): r is string => !!r);
+  const bookings =
+    bookingIds.length > 0
+      ? await prisma.booking.findMany({
+          where: { id: { in: bookingIds } },
+          select: {
+            id: true,
+            pickupLocation: true,
+            dropoffLocation: true,
+            estimatedCost: true,
+            status: true,
+            createdAt: true,
+          },
+        })
+      : [];
+  const bookingMap = new Map(bookings.map((b) => [b.id, b]));
+
+  const pendingTrips = await prisma.booking.count({
+    where: {
+      driverId: id,
+      status: "COMPLETED",
+      paymentStatus: "UNPAID",
+    },
+  });
+
+  return res.status(200).json({
+    summary: {
+      balance: wallet.balance,
+      totalEarnings,
+      weekEarnings,
+      tripCount: transactions.length,
+      pendingTrips,
+      commissionRate: 0.1,
+    },
+    transactions: transactions.map((t) => ({
+      ...t,
+      booking: t.reference ? bookingMap.get(t.reference) ?? null : null,
+    })),
+  });
 };

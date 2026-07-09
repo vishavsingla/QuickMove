@@ -35,12 +35,17 @@
 - Wallet ledger, top-up, test gateway payment intents
 - `/wallet` page + checkout on completed bookings
 
-### Iteration 10 — KYC, admin ops, observability (current)
+### Iteration 10 — KYC, admin ops, observability
 - Driver KYC submit/review with document upload stubs
 - Admin live driver map + DB-backed pricing rules editor
 - Prometheus `/metrics` + OpenTelemetry bootstrap stub
 - 51 backend tests passing
 
+### Iteration 11 — Driver earnings (current)
+- `GET /api/driver/earnings` with balance, week total, payout history
+- Earnings card on driver dashboard + `/driver/earnings` page
+- 53 backend tests passing
+
 ### Next
-- Driver earnings dashboard, real GPS, coupons expansion
+- Real GPS via `navigator.geolocation`, component tests (RTL)
 - Porter/Lalamove remaining gaps from TASKS.md

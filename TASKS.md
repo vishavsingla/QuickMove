@@ -27,7 +27,7 @@ Last updated: 2026-07-10
 - [ ] Remaining Porter/Lalamove parity gaps
 
 ## Backlog — Frontend
-- [ ] Driver earnings dashboard
+- [x] Driver earnings dashboard
 - [ ] Component tests (RTL)
 
 ## Backlog — DevOps

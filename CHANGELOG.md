@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- Driver earnings dashboard: `GET /api/driver/earnings`, summary on driver page + `/driver/earnings`
 - Prometheus `/metrics` with HTTP, booking, and payment counters
 - OpenTelemetry bootstrap stub + `deploy/observability/prometheus.yml`
 - Admin live driver map with REST poll + socket `admin:driverLocation`

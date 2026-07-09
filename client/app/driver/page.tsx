@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, MapPin, Navigation, Check, X, Upload, Shield } from "lucide-react";
+import { Loader2, MapPin, Navigation, Check, X, Upload, Shield, IndianRupee, TrendingUp } from "lucide-react";
 import { api } from "@/lib/api";
 import { RequireRole } from "@/components/RequireRole";
 import { ChatPanel } from "@/components/ChatPanel";
@@ -34,6 +34,22 @@ function DriverInner() {
   const [licenseFile, setLicenseFile] = useState<File | null>(null);
   const [idFile, setIdFile] = useState<File | null>(null);
   const [kycSubmitting, setKycSubmitting] = useState(false);
+  const [earnings, setEarnings] = useState<{
+    summary: {
+      balance: number;
+      totalEarnings: number;
+      weekEarnings: number;
+      tripCount: number;
+      pendingTrips: number;
+      commissionRate: number;
+    };
+    transactions: Array<{
+      id: string;
+      amount: number;
+      createdAt: string;
+      booking: { pickupLocation: string; dropoffLocation: string } | null;
+    }>;
+  } | null>(null);
   const posRef = useRef(pos);
   posRef.current = pos;
 
@@ -42,16 +58,18 @@ function DriverInner() {
   );
 
   const refresh = useCallback(async () => {
-    const [p, o, j, k] = await Promise.all([
+    const [p, o, j, k, e] = await Promise.all([
       api.driverProfile(),
       api.driverOffers().catch(() => ({ offers: [] })),
       api.driverJobs(),
       api.getDriverKyc().catch(() => null),
+      api.driverEarnings().catch(() => null),
     ]);
     setDriver(p.driver);
     setOffers(o.offers);
     setJobs(j.jobs);
     if (k) setKyc(k.kyc);
+    if (e) setEarnings(e);
     if (p.driver.currentLat && p.driver.currentLng && !posRef.current)
       setPos({ lat: p.driver.currentLat, lng: p.driver.currentLng });
   }, []);
@@ -255,6 +273,76 @@ function DriverInner() {
           )}
         </CardContent>
       </Card>
+
+      {earnings && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <IndianRupee className="h-5 w-5" /> Earnings
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-4">
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">Available balance</p>
+                <p className="text-xl font-bold">{currency(earnings.summary.balance)}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">This week</p>
+                <p className="text-xl font-bold">{currency(earnings.summary.weekEarnings)}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">All-time trips</p>
+                <p className="text-xl font-bold">{earnings.summary.tripCount}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">Pending payout</p>
+                <p className="text-xl font-bold">
+                  {earnings.summary.pendingTrips > 0 ? (
+                    <span className="flex items-center gap-1 text-amber-600">
+                      <TrendingUp className="h-4 w-4" />
+                      {earnings.summary.pendingTrips} trip{earnings.summary.pendingTrips > 1 ? "s" : ""}
+                    </span>
+                  ) : (
+                    "—"
+                  )}
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              You keep {(1 - earnings.summary.commissionRate) * 100}% of each fare; platform fee is{" "}
+              {earnings.summary.commissionRate * 100}%.
+            </p>
+            {earnings.transactions.length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Recent trip payouts</p>
+                {earnings.transactions.slice(0, 5).map((t) => (
+                  <div
+                    key={t.id}
+                    className="flex items-center justify-between rounded-lg border p-3 text-sm"
+                  >
+                    <div>
+                      <p className="font-medium">
+                        {t.booking
+                          ? `${t.booking.pickupLocation.split(",")[0]} → ${t.booking.dropoffLocation.split(",")[0]}`
+                          : "Trip earnings"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(t.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <span className="font-semibold text-emerald-600">+{currency(t.amount)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Complete paid trips to see earnings here.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Active job */}

@@ -8,6 +8,7 @@ import {
   acceptBooking,
   rejectBooking,
   updateJobStatus,
+  getEarnings,
 } from "../controllers/driver.controller";
 import { getKyc, submitKyc } from "../controllers/kyc.controller";
 import { requireAuth, requireRole } from "../middlewares/auth";
@@ -23,6 +24,7 @@ router.post("/availability", setAvailability);
 router.post("/location", updateLocation);
 router.get("/offers", listOffers);
 router.get("/jobs", listMyJobs);
+router.get("/earnings", getEarnings);
 router.post("/bookings/:id/accept", acceptBooking);
 router.post("/bookings/:id/reject", rejectBooking);
 router.post("/bookings/:id/status", updateJobStatus);
