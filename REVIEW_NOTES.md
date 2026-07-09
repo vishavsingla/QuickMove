@@ -6,17 +6,17 @@
 - Atomic driver accept prevents double-assignment (integration test)
 - JWT role guards on all protected routes
 - Client build passes typecheck + lint
-- Backend 31/31 tests green
+- Backend 38/38 tests green
+- Redis Socket.io adapter for horizontal scaling
+- Payments + wallet flows with test gateway
+- Multi-stop bookings + in-app chat (REST + WebSocket)
 - `.env` excluded from git; secrets not committed
 
 ### Open findings (to address in next iterations)
 - Access token TTL is 7d; add refresh token rotation for production
 - No rate limiting on auth/geo endpoints yet
 - Driver GPS on frontend is simulated; real `navigator.geolocation` needed for mobile
-- Payment, wallet, chat, multi-stop not implemented yet
-- CI workflow needs to be pushed under `.github/workflows/`
-- Redis not yet integrated for socket horizontal scaling
-- Docs in `docs/` are surface-level; deep HLD/LLD with Mermaid pending
+- k6 load tests and Terraform stubs pending
 
 ### Security
 - Passwords hashed with bcrypt (cost 10)

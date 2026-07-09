@@ -70,6 +70,25 @@ export interface Booking {
   driverId: string | null;
   driver?: Driver | null;
   user?: { id: string; name: string | null; phoneNumber: string } | null;
+  stops?: BookingStop[];
+}
+
+export interface BookingStop {
+  id: string;
+  orderIndex: number;
+  location: string;
+  lat: number;
+  lng: number;
+  stopType: "PICKUP" | "WAYPOINT" | "DROP";
+}
+
+export interface ChatMessage {
+  id: string;
+  bookingId: string;
+  senderUserId: string;
+  senderRole: string;
+  body: string;
+  createdAt: string;
 }
 
 export interface FareBreakdown {

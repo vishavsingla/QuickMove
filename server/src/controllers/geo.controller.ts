@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { VehicleType } from "@prisma/client";
-import { geocode, routeBetween } from "../utils/geo";
+import { geocode, routeBetween, routeThrough, GeoPoint } from "../utils/geo";
 import { estimateFare, currentSurge } from "../utils/pricing";
 
 export const searchPlaces = async (req: Request, res: Response) => {
@@ -15,7 +15,8 @@ export const searchPlaces = async (req: Request, res: Response) => {
 
 export const estimate = async (req: Request, res: Response) => {
   try {
-    const { pickupLat, pickupLng, dropoffLat, dropoffLng, vehicleType } = req.body;
+    const { pickupLat, pickupLng, dropoffLat, dropoffLng, vehicleType, stops } =
+      req.body;
     if (
       pickupLat == null ||
       pickupLng == null ||
@@ -26,10 +27,21 @@ export const estimate = async (req: Request, res: Response) => {
         .status(400)
         .json({ message: "pickup and dropoff coordinates are required" });
 
-    const route = await routeBetween(
+    const points: GeoPoint[] = [
       { lat: Number(pickupLat), lng: Number(pickupLng) },
-      { lat: Number(dropoffLat), lng: Number(dropoffLng) }
-    );
+      ...(Array.isArray(stops)
+        ? stops.map((s: { lat: number; lng: number }) => ({
+            lat: Number(s.lat),
+            lng: Number(s.lng),
+          }))
+        : []),
+      { lat: Number(dropoffLat), lng: Number(dropoffLng) },
+    ];
+
+    const route =
+      points.length > 2
+        ? await routeThrough(points)
+        : await routeBetween(points[0], points[points.length - 1]);
 
     const surge = currentSurge();
     const distanceKm = Number(route.distanceKm.toFixed(2));

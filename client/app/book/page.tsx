@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, ArrowRight, Clock, Route } from "lucide-react";
+import { Loader2, ArrowRight, Clock, Route, Plus, X } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { RequireRole } from "@/components/RequireRole";
 import { AddressSearch } from "@/components/AddressSearch";
@@ -19,11 +19,17 @@ function BookInner() {
   const router = useRouter();
   const { toast } = useToast();
   const [pickup, setPickup] = useState<PlaceResult | null>(null);
+  const [stops, setStops] = useState<PlaceResult[]>([]);
   const [dropoff, setDropoff] = useState<PlaceResult | null>(null);
   const [estimate, setEstimate] = useState<Estimate | null>(null);
   const [vehicle, setVehicle] = useState<VehicleType>("CAR");
   const [estimating, setEstimating] = useState(false);
   const [booking, setBooking] = useState(false);
+
+  const routePoints = useMemo(
+    () => [pickup, ...stops, dropoff].filter(Boolean) as PlaceResult[],
+    [pickup, stops, dropoff]
+  );
 
   useEffect(() => {
     if (!pickup || !dropoff) {
@@ -37,25 +43,46 @@ function BookInner() {
         pickupLng: pickup.lng,
         dropoffLat: dropoff.lat,
         dropoffLng: dropoff.lng,
+        stops: stops.map((s) => ({ lat: s.lat, lng: s.lng })),
       })
       .then(setEstimate)
       .catch(() =>
         toast({ title: "Could not estimate fare", variant: "destructive" })
       )
       .finally(() => setEstimating(false));
-  }, [pickup, dropoff, toast]);
+  }, [pickup, dropoff, stops, toast]);
 
   const markers = useMemo<MapMarker[]>(() => {
     const m: MapMarker[] = [];
     if (pickup) m.push({ lat: pickup.lat, lng: pickup.lng, kind: "pickup", label: "Pickup" });
+    stops.forEach((s, i) =>
+      m.push({ lat: s.lat, lng: s.lng, kind: "waypoint", label: `Stop ${i + 1}` })
+    );
     if (dropoff) m.push({ lat: dropoff.lat, lng: dropoff.lng, kind: "dropoff", label: "Drop-off" });
     return m;
-  }, [pickup, dropoff]);
+  }, [pickup, stops, dropoff]);
 
   const selectedQuote = estimate?.quotes.find((q) => q.vehicleType === vehicle);
 
+  const addStop = () => {
+    if (stops.length >= 5) {
+      toast({ title: "Maximum 5 stops", variant: "destructive" });
+      return;
+    }
+    setStops((prev) => [...prev, { displayName: "", lat: 0, lng: 0 }]);
+  };
+
+  const updateStop = (index: number, place: PlaceResult) => {
+    setStops((prev) => prev.map((s, i) => (i === index ? place : s)));
+  };
+
+  const removeStop = (index: number) => {
+    setStops((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const book = async () => {
     if (!pickup || !dropoff) return;
+    const validStops = stops.filter((s) => s.displayName && s.lat && s.lng);
     setBooking(true);
     try {
       const res = await api.createBooking({
@@ -66,6 +93,15 @@ function BookInner() {
         dropoffLat: dropoff.lat,
         dropoffLng: dropoff.lng,
         vehicleType: vehicle,
+        ...(validStops.length
+          ? {
+              stops: validStops.map((s) => ({
+                location: s.displayName,
+                lat: s.lat,
+                lng: s.lng,
+              })),
+            }
+          : {}),
       });
       toast({ title: "Booking created", description: "Finding you a driver…" });
       router.push(`/bookings/${res.booking.id}`);
@@ -94,6 +130,34 @@ function BookInner() {
               value={pickup}
               onSelect={setPickup}
             />
+
+            {stops.map((stop, i) => (
+              <div key={i} className="flex items-end gap-2">
+                <div className="flex-1">
+                  <AddressSearch
+                    label={`Stop ${i + 1}`}
+                    placeholder="Search stop address"
+                    value={stop.displayName ? stop : null}
+                    onSelect={(p) => updateStop(i, p)}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0"
+                  onClick={() => removeStop(i)}
+                  aria-label={`Remove stop ${i + 1}`}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+
+            <Button type="button" variant="outline" size="sm" onClick={addStop}>
+              <Plus className="mr-1 h-4 w-4" /> Add stop
+            </Button>
+
             <AddressSearch
               label="Drop-off location"
               placeholder="Search drop-off address"
@@ -111,6 +175,7 @@ function BookInner() {
               <div className="flex flex-wrap gap-2 text-sm">
                 <Badge variant="info" className="gap-1">
                   <Route className="h-3 w-3" /> {estimate.distanceKm} km
+                  {routePoints.length > 2 && ` · ${routePoints.length} stops`}
                 </Badge>
                 <Badge variant="secondary" className="gap-1">
                   <Clock className="h-3 w-3" /> {Math.round(estimate.durationMin)} min
