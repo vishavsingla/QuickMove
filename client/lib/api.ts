@@ -306,4 +306,23 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ status, note }),
     }),
+  adminDriverLocations: () =>
+    request<{
+      drivers: Array<{
+        id: string;
+        name: string;
+        vehicleType: string;
+        licensePlate: string;
+        isAvailable: boolean;
+        currentLat: number;
+        currentLng: number;
+      }>;
+    }>("/api/admin/drivers/locations"),
+  adminPricingRules: () =>
+    request<{ rules: Array<Record<string, unknown>> }>("/api/admin/pricing-rules"),
+  adminUpdatePricingRule: (body: Record<string, unknown>) =>
+    request<{ rule: unknown }>("/api/admin/pricing-rules", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
 };

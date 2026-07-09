@@ -23,7 +23,7 @@ const SocketContext = createContext<SocketState>({
 });
 
 export function SocketProvider({ children }: { children: ReactNode }) {
-  const { user, driverId } = useAuth();
+  const { user, driverId, role } = useAuth();
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
 
@@ -48,13 +48,14 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       socket.emit("register", {
         userId: user?.id,
         driverId: driverId ?? undefined,
+        isAdmin: role === "ADMIN",
       });
     if (socket.connected) doRegister();
     socket.on("connect", doRegister);
     return () => {
       socket.off("connect", doRegister);
     };
-  }, [user?.id, driverId]);
+  }, [user?.id, driverId, role]);
 
   return (
     <SocketContext.Provider value={{ socket: socketRef.current, connected }}>

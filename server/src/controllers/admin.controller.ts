@@ -1,7 +1,13 @@
 import { Response } from "express";
+import { VehicleType } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { AuthRequest } from "../middlewares/auth";
 import { notify } from "../services/notifications";
+import {
+  DEFAULT_RATES,
+  loadPricingRules,
+  upsertPricingRule,
+} from "../services/pricingRules";
 
 export const listDrivers = async (_req: AuthRequest, res: Response) => {
   const drivers = await prisma.driver.findMany({
@@ -113,4 +119,53 @@ export const stats = async (_req: AuthRequest, res: Response) => {
       count: v._count._all,
     })),
   });
+};
+
+export const driverLocations = async (_req: AuthRequest, res: Response) => {
+  const drivers = await prisma.driver.findMany({
+    where: {
+      status: "APPROVED",
+      currentLat: { not: null },
+      currentLng: { not: null },
+    },
+    select: {
+      id: true,
+      name: true,
+      vehicleType: true,
+      licensePlate: true,
+      isAvailable: true,
+      currentLat: true,
+      currentLng: true,
+    },
+  });
+  return res.status(200).json({ drivers });
+};
+
+export const listPricingRules = async (_req: AuthRequest, res: Response) => {
+  const rates = await loadPricingRules();
+  const rules = Object.entries(rates).map(([vehicleType, r]) => ({
+    vehicleType,
+    ...r,
+  }));
+  return res.status(200).json({ rules });
+};
+
+export const updatePricingRule = async (req: AuthRequest, res: Response) => {
+  const { vehicleType, base, perKm, perMin, minFare, peakSurge } = req.body;
+  if (!vehicleType || !Object.values(VehicleType).includes(vehicleType))
+    return res.status(400).json({ message: "Invalid vehicleType" });
+  if ([base, perKm, perMin, minFare].some((v) => v == null || Number(v) < 0))
+    return res.status(400).json({ message: "Rates must be non-negative numbers" });
+
+  const rule = await upsertPricingRule(vehicleType, {
+    base: Number(base),
+    perKm: Number(perKm),
+    perMin: Number(perMin),
+    minFare: Number(minFare),
+    peakSurge:
+      peakSurge != null
+        ? Number(peakSurge)
+        : DEFAULT_RATES[vehicleType as VehicleType].peakSurge,
+  });
+  return res.status(200).json({ rule });
 };

@@ -14,9 +14,18 @@ const attachHandlers = (server: Server) => {
   server.on("connection", (socket) => {
     socket.on(
       "register",
-      ({ userId, driverId }: { userId?: string; driverId?: string }) => {
+      ({
+        userId,
+        driverId,
+        isAdmin,
+      }: {
+        userId?: string;
+        driverId?: string;
+        isAdmin?: boolean;
+      }) => {
         if (userId) socket.join(`user:${userId}`);
         if (driverId) socket.join(`driver:${driverId}`);
+        if (isAdmin) socket.join("admin:live");
       }
     );
 
@@ -47,6 +56,25 @@ const attachHandlers = (server: Server) => {
             where: { id: driverId },
             data: { currentLat: lat, currentLng: lng },
           });
+
+          const driver = await prisma.driver.findUnique({
+            where: { id: driverId },
+            select: {
+              id: true,
+              name: true,
+              vehicleType: true,
+              licensePlate: true,
+              isAvailable: true,
+            },
+          });
+          if (driver) {
+            server.to("admin:live").emit("admin:driverLocation", {
+              driverId,
+              lat,
+              lng,
+              ...driver,
+            });
+          }
 
           if (bookingId) {
             const booking = await prisma.booking.update({
