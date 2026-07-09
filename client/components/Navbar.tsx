@@ -23,7 +23,10 @@ export function Navbar() {
           { href: "/profile", label: "Profile" },
         ]
       : role === "DRIVER"
-      ? [{ href: "/driver", label: "Dashboard" }]
+      ? [
+          { href: "/driver", label: "Dashboard" },
+          { href: "/driver/earnings", label: "Earnings" },
+        ]
       : role === "ADMIN"
       ? [{ href: "/admin", label: "Admin" }]
       : [];

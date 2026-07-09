@@ -13,7 +13,6 @@
 
 ### Open findings (to address in next iterations)
 - Driver GPS on frontend is simulated; real `navigator.geolocation` needed for mobile
-- Driver earnings dashboard not yet built
 - Full OTel SDK wiring when collector is available
 
 ### Security

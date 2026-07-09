@@ -165,6 +165,33 @@ export const api = {
     }),
   driverOffers: () => request<{ offers: Booking[] }>("/api/driver/offers"),
   driverJobs: () => request<{ jobs: Booking[] }>("/api/driver/jobs"),
+  driverEarnings: () =>
+    request<{
+      summary: {
+        balance: number;
+        totalEarnings: number;
+        weekEarnings: number;
+        tripCount: number;
+        pendingTrips: number;
+        commissionRate: number;
+      };
+      transactions: Array<{
+        id: string;
+        amount: number;
+        type: string;
+        description: string;
+        reference: string | null;
+        createdAt: string;
+        booking: {
+          id: string;
+          pickupLocation: string;
+          dropoffLocation: string;
+          estimatedCost: number;
+          status: string;
+          createdAt: string;
+        } | null;
+      }>;
+    }>("/api/driver/earnings"),
   acceptJob: (id: string) =>
     request<{ booking: Booking }>(`/api/driver/bookings/${id}/accept`, {
       method: "POST",
