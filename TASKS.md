@@ -12,10 +12,10 @@ Last updated: 2026-07-10
 - [x] Kubernetes manifests (deploy/k8s)
 - [x] Root README
 - [x] Playwright e2e (7 tests) + CI job
+- [x] Redis Socket.io adapter (horizontal scale)
 
 ## In progress
-- [ ] Merge e2e PR
-- [ ] Redis Socket.io adapter
+- [ ] Payments + wallet flows
 
 ## Backlog — Backend modules
 - [ ] Redis: socket adapter, pub/sub, caching
