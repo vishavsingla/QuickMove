@@ -9,20 +9,19 @@ datasource db {
 }
 
 model User {
-  id                 String              @id @default(cuid())
-  name               String?
-  email              String              @unique
-  phoneNumber        String              @unique
-  hashedPassword     String
-  role               Role                @default(USER)
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  sessions           Session[]
-  verificationTokens VerificationToken[]
-  bookings           Booking[]           @relation("UserBookings")
-  Driver             Driver?
-  Admin              Admin?
-  Notification       Notification[]
+  id             String         @id @default(cuid())
+  name           String?
+  email          String         @unique
+  phoneNumber    String         @unique
+  hashedPassword String
+  role           Role           @default(USER)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  sessions       Session[]
+  bookings       Booking[]      @relation("UserBookings")
+  driver         Driver?
+  admin          Admin?
+  notifications  Notification[]
 }
 
 model Vehicle {
@@ -40,27 +39,30 @@ model Vehicle {
 }
 
 model Driver {
-  id             String         @id @default(cuid())
-  userId         String         @unique
-  name           String
-  hashedPassword String
-  email          String
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  phoneNumber    String         @unique
-  licenseNumber  String
-  isAvailable    Boolean        @default(true)
-  bankAccNo      String?
-  ifscCode       String?
-  bookings       Booking[]      @relation("DriverBookings")
-  vehicles       Vehicle[]
-  Notification   Notification[]
-  city           String
-  area           String
-  currentLat     Float?
-  currentLng     Float?
-  status         String         @default("PENDING")
-  vehicleType    VehicleType
+  id            String         @id @default(cuid())
+  userId        String         @unique
+  name          String
+  email         String
+  phoneNumber   String         @unique
+  licenseNumber String
+  isAvailable   Boolean        @default(true)
+  bankAccNo     String?
+  ifscCode      String?
+  city          String
+  area          String
+  currentLat    Float?
+  currentLng    Float?
+  status        String         @default("PENDING") // PENDING | APPROVED | REJECTED
+  vehicleType   VehicleType
   licensePlate  String
+  rating        Float          @default(5)
+  totalTrips    Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings      Booking[]      @relation("DriverBookings")
+  vehicles      Vehicle[]
+  notifications Notification[]
 }
 
 enum VehicleType {
@@ -88,17 +90,6 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model VerificationToken {
-  id         String   @id @default(cuid())
-  identifier String
-  token      String   @unique
-  expires    DateTime
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([identifier, token])
-}
-
 model Booking {
   id                String         @id @default(cuid())
   pickupLocation    String
@@ -107,17 +98,24 @@ model Booking {
   dropoffLocation   String
   dropoffLat        Float
   dropoffLng        Float
+  vehicleType       VehicleType
   estimatedCost     Float
-  estimatedDistance Float
+  estimatedDistance Float // kilometers
+  estimatedDuration Float          @default(0) // minutes
   status            BookingStatus  @default(PENDING)
+  paymentStatus     String         @default("UNPAID") // UNPAID | PAID
+  paymentMethod     String?
+  driverLat         Float?
+  driverLng         Float?
+  rating            Int?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
+  scheduledTime     DateTime?
   userId            String
   user              User           @relation("UserBookings", fields: [userId], references: [id], onDelete: Cascade)
   driverId          String?
   driver            Driver?        @relation("DriverBookings", fields: [driverId], references: [id], onDelete: SetNull)
-  Notification      Notification[]
-  scheduledTime     DateTime?
+  notifications     Notification[]
 }
 
 model Notification {
@@ -130,9 +128,9 @@ model Notification {
   createdAt DateTime @default(now())
   isRead    Boolean  @default(false)
 
-  user    User?    @relation(fields: [userId], references: [id])
-  driver  Driver?  @relation(fields: [driverId], references: [id])
-  booking Booking? @relation(fields: [bookingId], references: [id])
+  user    User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  driver  Driver?  @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  booking Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 }
 
 enum Role {
@@ -144,6 +142,7 @@ enum Role {
 enum BookingStatus {
   PENDING
   ACCEPTED
+  ARRIVED
   IN_PROGRESS
   COMPLETED
   REJECTED
