@@ -11,10 +11,10 @@ Last updated: 2026-07-10
 - [x] Deep HLD with Mermaid diagrams
 - [x] Kubernetes manifests (deploy/k8s)
 - [x] Root README
+- [x] Playwright e2e (7 tests) + CI job
 
 ## In progress
-- [ ] Merge feat/end-to-end-platform PR
-- [ ] Playwright e2e tests
+- [ ] Merge e2e PR
 - [ ] Redis Socket.io adapter
 
 ## Backlog — Backend modules
