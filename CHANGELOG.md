@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- Web push notification stubs: service worker, `PushSubscription` model, subscribe API
 - Driver bank withdrawal: `POST /api/driver/bank`, `POST /api/driver/withdraw`, `GET /api/driver/payouts`
 - Full OpenTelemetry Node SDK (OTLP exporter when `OTEL_EXPORTER_OTLP_ENDPOINT` set)
 - Grafana dashboard stub + `deploy/observability/docker-compose.yml` (Prometheus + Grafana)

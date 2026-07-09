@@ -24,7 +24,11 @@ Last updated: 2026-07-10
 - [x] Prometheus metrics + OpenTelemetry SDK
 
 ## In progress
-- [ ] Porter/Lalamove parity: driver payouts UI, push notifications, mobile app
+- [ ] Porter/Lalamove parity: mobile app (future)
+
+## Done (iteration 6)
+- [x] Driver payout withdrawal UI + API
+- [x] Web push notification stubs (service worker + subscribe API)
 
 ## Backlog — Frontend
 - [x] Driver earnings dashboard
@@ -37,8 +41,8 @@ Last updated: 2026-07-10
 - [x] OpenTelemetry SDK + Grafana dashboard stubs
 
 ## Stop conditions
-- [x] No placeholders / dummy UI (functional dashboards; KYC uses stub:// doc URLs by design)
-- [x] All tests green in CI (58 backend + 9 RTL + 7 e2e)
+- [x] No placeholders / dummy UI (functional dashboards; KYC/push use intentional stubs)
+- [x] All tests green in CI (63 backend + 9 RTL + 7 e2e)
 - [x] k8s manifests ready (`deploy/k8s/`)
 - [x] Deep docs complete (HLD, LLD, API, RUNBOOK)
 - [x] Security review passed (helmet headers, RBAC, no hash leak tests)

@@ -6,7 +6,8 @@
 - Atomic driver accept prevents double-assignment (integration test)
 - JWT role guards on all protected routes
 - Client build passes typecheck + lint
-- Backend 51/51 tests green
+- Backend 63/63 tests green
+- Driver payout withdrawal, web push notification stubs
 - Driver KYC, coupons, invoices, admin live map, pricing rules
 - Prometheus metrics + OTel SDK (OTLP when configured)
 - `.env` excluded from git; secrets not committed
