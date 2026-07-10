@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowRight, Clock, Route, Plus, X } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
@@ -16,6 +16,8 @@ import { VEHICLE_META, currency } from "@/lib/ui";
 import type { Estimate, PlaceResult, VehicleType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+type MapTarget = "pickup" | "dropoff" | { stop: number };
+
 function BookInner() {
   const router = useRouter();
   const { toast } = useToast();
@@ -29,25 +31,32 @@ function BookInner() {
   const [couponInput, setCouponInput] = useState("");
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponDesc, setCouponDesc] = useState("");
+  const [mapTarget, setMapTarget] = useState<MapTarget>("pickup");
+  const [reverseLoading, setReverseLoading] = useState(false);
 
   const routePoints = useMemo(
     () => [pickup, ...stops, dropoff].filter(Boolean) as PlaceResult[],
     [pickup, stops, dropoff]
   );
 
+  const hasValidCoords = (p: PlaceResult | null) =>
+    !!p && Number.isFinite(p.lat) && Number.isFinite(p.lng) && (p.lat !== 0 || p.lng !== 0);
+
   useEffect(() => {
-    if (!pickup || !dropoff) {
+    if (!hasValidCoords(pickup) || !hasValidCoords(dropoff)) {
       setEstimate(null);
       return;
     }
     setEstimating(true);
     api
       .estimate({
-        pickupLat: pickup.lat,
-        pickupLng: pickup.lng,
-        dropoffLat: dropoff.lat,
-        dropoffLng: dropoff.lng,
-        stops: stops.map((s) => ({ lat: s.lat, lng: s.lng })),
+        pickupLat: pickup!.lat,
+        pickupLng: pickup!.lng,
+        dropoffLat: dropoff!.lat,
+        dropoffLng: dropoff!.lng,
+        stops: stops
+          .filter((s) => hasValidCoords(s))
+          .map((s) => ({ lat: s.lat, lng: s.lng })),
       })
       .then(setEstimate)
       .catch(() =>
@@ -58,13 +67,79 @@ function BookInner() {
 
   const markers = useMemo<MapMarker[]>(() => {
     const m: MapMarker[] = [];
-    if (pickup) m.push({ lat: pickup.lat, lng: pickup.lng, kind: "pickup", label: "Pickup" });
-    stops.forEach((s, i) =>
-      m.push({ lat: s.lat, lng: s.lng, kind: "waypoint", label: `Stop ${i + 1}` })
-    );
-    if (dropoff) m.push({ lat: dropoff.lat, lng: dropoff.lng, kind: "dropoff", label: "Drop-off" });
+    if (hasValidCoords(pickup))
+      m.push({ lat: pickup!.lat, lng: pickup!.lng, kind: "pickup", label: "Pickup" });
+    stops.forEach((s, i) => {
+      if (hasValidCoords(s))
+        m.push({
+          lat: s.lat,
+          lng: s.lng,
+          kind: "waypoint",
+          label: `Stop ${i + 1}`,
+          stopIndex: i,
+        });
+    });
+    if (hasValidCoords(dropoff))
+      m.push({
+        lat: dropoff!.lat,
+        lng: dropoff!.lng,
+        kind: "dropoff",
+        label: "Drop-off",
+      });
     return m;
   }, [pickup, stops, dropoff]);
+
+  const updateStop = useCallback((index: number, place: PlaceResult) => {
+    setStops((prev) => prev.map((s, i) => (i === index ? place : s)));
+  }, []);
+
+  const applyPlaceFromMap = useCallback(
+    async (lat: number, lng: number, target: MapTarget) => {
+      setReverseLoading(true);
+      try {
+        const { place } = await api.reversePlace(lat, lng);
+        if (target === "pickup") setPickup(place);
+        else if (target === "dropoff") setDropoff(place);
+        else updateStop(target.stop, place);
+      } catch {
+        const fallback = {
+          displayName: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+          lat,
+          lng,
+        };
+        if (target === "pickup") setPickup(fallback);
+        else if (target === "dropoff") setDropoff(fallback);
+        else updateStop(target.stop, fallback);
+        toast({
+          title: "Could not resolve address",
+          description: "Using coordinates for this pin.",
+          variant: "destructive",
+        });
+      } finally {
+        setReverseLoading(false);
+      }
+    },
+    [toast, updateStop]
+  );
+
+  const handleMapClick = useCallback(
+    (lat: number, lng: number) => {
+      void applyPlaceFromMap(lat, lng, mapTarget);
+    },
+    [applyPlaceFromMap, mapTarget]
+  );
+
+  const handleMarkerDrag = useCallback(
+    (marker: MapMarker, lat: number, lng: number) => {
+      let target: MapTarget;
+      if (marker.kind === "pickup") target = "pickup";
+      else if (marker.kind === "dropoff") target = "dropoff";
+      else if (marker.stopIndex != null) target = { stop: marker.stopIndex };
+      else return;
+      void applyPlaceFromMap(lat, lng, target);
+    },
+    [applyPlaceFromMap]
+  );
 
   const selectedQuote = estimate?.quotes.find((q) => q.vehicleType === vehicle);
   const payable =
@@ -98,10 +173,7 @@ function BookInner() {
       return;
     }
     setStops((prev) => [...prev, { displayName: "", lat: 0, lng: 0 }]);
-  };
-
-  const updateStop = (index: number, place: PlaceResult) => {
-    setStops((prev) => prev.map((s, i) => (i === index ? place : s)));
+    setMapTarget({ stop: stops.length });
   };
 
   const removeStop = (index: number) => {
@@ -109,17 +181,17 @@ function BookInner() {
   };
 
   const book = async () => {
-    if (!pickup || !dropoff) return;
-    const validStops = stops.filter((s) => s.displayName && s.lat && s.lng);
+    if (!hasValidCoords(pickup) || !hasValidCoords(dropoff)) return;
+    const validStops = stops.filter((s) => s.displayName && hasValidCoords(s));
     setBooking(true);
     try {
       const res = await api.createBooking({
-        pickupLocation: pickup.displayName,
-        pickupLat: pickup.lat,
-        pickupLng: pickup.lng,
-        dropoffLocation: dropoff.displayName,
-        dropoffLat: dropoff.lat,
-        dropoffLng: dropoff.lng,
+        pickupLocation: pickup!.displayName,
+        pickupLat: pickup!.lat,
+        pickupLng: pickup!.lng,
+        dropoffLocation: dropoff!.displayName,
+        dropoffLat: dropoff!.lat,
+        dropoffLng: dropoff!.lng,
         vehicleType: vehicle,
         ...(couponDiscount > 0 && couponInput.trim()
           ? { couponCode: couponInput.trim().toUpperCase() }
@@ -147,6 +219,13 @@ function BookInner() {
     }
   };
 
+  const mapTargetLabel =
+    mapTarget === "pickup"
+      ? "pickup"
+      : mapTarget === "dropoff"
+        ? "drop-off"
+        : `stop ${mapTarget.stop + 1}`;
+
   return (
     <div className="container grid gap-6 py-8 lg:grid-cols-[minmax(0,420px)_1fr]">
       <div className="space-y-6">
@@ -157,9 +236,10 @@ function BookInner() {
           <CardContent className="space-y-4">
             <AddressSearch
               label="Pickup location"
-              placeholder="Search pickup address"
+              placeholder="Search pickup address (e.g. Chandigarh)"
               value={pickup}
               onSelect={setPickup}
+              onFocusField={() => setMapTarget("pickup")}
             />
 
             {stops.map((stop, i) => (
@@ -170,6 +250,7 @@ function BookInner() {
                     placeholder="Search stop address"
                     value={stop.displayName ? stop : null}
                     onSelect={(p) => updateStop(i, p)}
+                    onFocusField={() => setMapTarget({ stop: i })}
                   />
                 </div>
                 <Button
@@ -191,9 +272,10 @@ function BookInner() {
 
             <AddressSearch
               label="Drop-off location"
-              placeholder="Search drop-off address"
+              placeholder="Search drop-off address (e.g. Manali)"
               value={dropoff}
               onSelect={setDropoff}
+              onFocusField={() => setMapTarget("dropoff")}
             />
 
             {estimating && (
@@ -307,17 +389,27 @@ function BookInner() {
         )}
       </div>
 
-      <div className="min-h-[400px] overflow-hidden rounded-xl border">
-        {markers.length > 0 ? (
-          <LiveMap markers={markers} showRoute className="h-full" />
-        ) : (
-          <div className="grid h-full place-items-center p-8 text-center text-muted-foreground">
-            <div>
-              <Route className="mx-auto mb-3 h-10 w-10 opacity-40" />
-              Search a pickup and drop-off to see your route.
-            </div>
-          </div>
-        )}
+      <div className="relative min-h-[480px] overflow-hidden rounded-xl border">
+        <div className="absolute left-3 top-3 z-[1000] rounded-md border bg-background/95 px-3 py-1.5 text-xs shadow-sm backdrop-blur">
+          {reverseLoading ? (
+            <span className="flex items-center gap-1.5">
+              <Loader2 className="h-3 w-3 animate-spin" /> Resolving address…
+            </span>
+          ) : (
+            <>
+              Click map or drag pins to set <strong>{mapTargetLabel}</strong>
+            </>
+          )}
+        </div>
+        <LiveMap
+          markers={markers}
+          showRoute={!!estimate}
+          routePath={estimate?.routeGeometry}
+          className="h-full min-h-[480px]"
+          onMapClick={handleMapClick}
+          onMarkerDrag={handleMarkerDrag}
+          mapClickEnabled
+        />
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import axios from "axios";
-import { haversineKm, routeBetween } from "../../src/utils/geo";
+import { haversineKm, routeBetween, geocode, reverseGeocode } from "../../src/utils/geo";
+import { searchLocalCities } from "../../src/utils/cityFallback";
 
 jest.mock("axios");
 const mockedAxios = axios as jest.Mocked<typeof axios>;
@@ -34,5 +35,44 @@ describe("geo.routeBetween", () => {
     expect(r.source).toBe("haversine");
     expect(r.distanceKm).toBeGreaterThan(0);
     expect(r.durationMin).toBeGreaterThan(0);
+  });
+});
+
+describe("geo.geocode", () => {
+  it("falls back to local cities when Nominatim fails", async () => {
+    mockedAxios.get.mockRejectedValueOnce(new Error("SSL error"));
+    const results = await geocode("chandigarh");
+    expect(results.length).toBeGreaterThan(0);
+    expect(results[0].displayName.toLowerCase()).toContain("chandigarh");
+  });
+
+  it("uses Nominatim when available", async () => {
+    mockedAxios.get.mockResolvedValueOnce({
+      data: [
+        {
+          display_name: "Test City, India",
+          lat: "12.9",
+          lon: "77.5",
+        },
+      ],
+    } as any);
+    const results = await geocode("test city");
+    expect(results[0].displayName).toBe("Test City, India");
+  });
+});
+
+describe("geo.reverseGeocode", () => {
+  it("returns coordinates label when reverse fails", async () => {
+    mockedAxios.get.mockRejectedValueOnce(new Error("SSL error"));
+    const place = await reverseGeocode(30.73, 76.78);
+    expect(place.lat).toBe(30.73);
+    expect(place.displayName).toBeTruthy();
+  });
+});
+
+describe("cityFallback.searchLocalCities", () => {
+  it("finds chandigarh and manali", () => {
+    expect(searchLocalCities("chandigarh")[0].displayName).toContain("Chandigarh");
+    expect(searchLocalCities("manali")[0].displayName).toContain("Manali");
   });
 });

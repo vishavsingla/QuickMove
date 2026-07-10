@@ -8,6 +8,7 @@ import {
   Popup,
   Polyline,
   useMap,
+  useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
 
@@ -16,11 +17,12 @@ export interface MapMarker {
   lng: number;
   label?: string;
   kind: "pickup" | "dropoff" | "driver" | "waypoint";
+  stopIndex?: number;
 }
 
 const COLORS: Record<MapMarker["kind"], string> = {
-  pickup: "#2563eb",
-  dropoff: "#16a34a",
+  pickup: "#16a34a",
+  dropoff: "#dc2626",
   driver: "#f59e0b",
   waypoint: "#9333ea",
 };
@@ -29,66 +31,141 @@ const makeIcon = (kind: MapMarker["kind"]) =>
   L.divIcon({
     className: "",
     html: `<div style="
-      width:18px;height:18px;border-radius:50%;
+      width:20px;height:20px;border-radius:50%;
       background:${COLORS[kind]};border:3px solid white;
-      box-shadow:0 0 0 2px ${COLORS[kind]};"></div>`,
-    iconSize: [18, 18],
-    iconAnchor: [9, 9],
+      box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
   });
 
-function FitBounds({ markers }: { markers: MapMarker[] }) {
+function FitBounds({
+  markers,
+  routePath,
+}: {
+  markers: MapMarker[];
+  routePath?: [number, number][];
+}) {
   const map = useMap();
   useEffect(() => {
-    if (markers.length === 0) return;
-    if (markers.length === 1) {
-      map.setView([markers[0].lat, markers[0].lng], 14);
+    const points: [number, number][] = [
+      ...markers.map((m) => [m.lat, m.lng] as [number, number]),
+      ...(routePath ?? []),
+    ];
+    if (points.length === 0) return;
+    if (points.length === 1) {
+      map.setView(points[0], 14);
       return;
     }
-    const bounds = L.latLngBounds(markers.map((m) => [m.lat, m.lng]));
+    const bounds = L.latLngBounds(points);
     map.fitBounds(bounds, { padding: [48, 48] });
-  }, [map, markers]);
+  }, [map, markers, routePath]);
   return null;
+}
+
+function MapClickHandler({
+  onMapClick,
+  enabled,
+}: {
+  onMapClick?: (lat: number, lng: number) => void;
+  enabled?: boolean;
+}) {
+  useMapEvents({
+    click(e) {
+      if (enabled && onMapClick) {
+        onMapClick(e.latlng.lat, e.latlng.lng);
+      }
+    },
+  });
+  return null;
+}
+
+function DraggableMarker({
+  marker,
+  onDragEnd,
+}: {
+  marker: MapMarker;
+  onDragEnd?: (marker: MapMarker, lat: number, lng: number) => void;
+}) {
+  const draggable = marker.kind !== "driver" && !!onDragEnd;
+
+  return (
+    <Marker
+      position={[marker.lat, marker.lng]}
+      icon={makeIcon(marker.kind)}
+      draggable={draggable}
+      eventHandlers={
+        draggable
+          ? {
+              dragend: (e) => {
+                const { lat, lng } = e.target.getLatLng();
+                onDragEnd?.(marker, lat, lng);
+              },
+            }
+          : undefined
+      }
+    >
+      {marker.label && <Popup>{marker.label}</Popup>}
+    </Marker>
+  );
 }
 
 export default function MapView({
   markers,
   showRoute = false,
+  routePath,
   className = "",
+  onMarkerDrag,
+  onMapClick,
+  mapClickEnabled = false,
 }: {
   markers: MapMarker[];
   showRoute?: boolean;
+  routePath?: [number, number][];
   className?: string;
+  onMarkerDrag?: (marker: MapMarker, lat: number, lng: number) => void;
+  onMapClick?: (lat: number, lng: number) => void;
+  mapClickEnabled?: boolean;
 }) {
   const center: [number, number] = markers[0]
     ? [markers[0].lat, markers[0].lng]
-    : [12.9716, 77.5946];
+    : [30.7334, 76.7797];
 
-  const route = markers.filter((m) => m.kind !== "driver");
+  const fallbackRoute =
+    showRoute && markers.length >= 2
+      ? markers
+          .filter((m) => m.kind !== "driver")
+          .map((m) => [m.lat, m.lng] as [number, number])
+      : [];
+
+  const polyline = routePath?.length ? routePath : fallbackRoute;
 
   return (
     <MapContainer
       center={center}
-      zoom={13}
+      zoom={markers.length ? 13 : 6}
       scrollWheelZoom
       className={`h-full w-full ${className}`}
-      style={{ minHeight: 280, borderRadius: 12 }}
+      style={{ minHeight: 400, borderRadius: 12 }}
     >
       <TileLayer
-        attribution='&copy; OpenStreetMap contributors'
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {showRoute && route.length >= 2 && (
+      <MapClickHandler onMapClick={onMapClick} enabled={mapClickEnabled} />
+      {polyline.length >= 2 && (
         <Polyline
-          positions={route.map((m) => [m.lat, m.lng])}
-          pathOptions={{ color: "#2563eb", weight: 4, opacity: 0.6, dashArray: "8 8" }}
+          positions={polyline}
+          pathOptions={{ color: "#2563eb", weight: 5, opacity: 0.75 }}
         />
       )}
       {markers.map((m, i) => (
-        <Marker key={i} position={[m.lat, m.lng]} icon={makeIcon(m.kind)}>
-          {m.label && <Popup>{m.label}</Popup>}
-        </Marker>
+        <DraggableMarker
+          key={`${m.kind}-${m.stopIndex ?? i}`}
+          marker={m}
+          onDragEnd={onMarkerDrag}
+        />
       ))}
-      <FitBounds markers={markers} />
+      <FitBounds markers={markers} routePath={polyline} />
     </MapContainer>
   );
 }

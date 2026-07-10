@@ -115,6 +115,10 @@ export const api = {
     request<{ results: PlaceResult[] }>(
       `/api/geo/search?q=${encodeURIComponent(q)}`
     ),
+  reversePlace: (lat: number, lng: number) =>
+    request<{ place: PlaceResult }>(
+      `/api/geo/reverse?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`
+    ),
   estimate: (body: {
     pickupLat: number;
     pickupLng: number;

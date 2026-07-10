@@ -1,6 +1,12 @@
 import { Request, Response } from "express";
 import { VehicleType } from "@prisma/client";
-import { geocode, routeBetween, routeThrough, GeoPoint } from "../utils/geo";
+import {
+  geocode,
+  reverseGeocode,
+  routeBetween,
+  routeThrough,
+  GeoPoint,
+} from "../utils/geo";
 import { estimateFare, currentSurge } from "../utils/pricing";
 
 export const searchPlaces = async (req: Request, res: Response) => {
@@ -10,6 +16,22 @@ export const searchPlaces = async (req: Request, res: Response) => {
     return res.status(200).json({ results });
   } catch (err: any) {
     return res.status(500).json({ message: "Search failed", error: err.message });
+  }
+};
+
+export const reversePlace = async (req: Request, res: Response) => {
+  try {
+    const lat = Number(req.query.lat);
+    const lng = Number(req.query.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return res.status(400).json({ message: "lat and lng are required" });
+    }
+    const place = await reverseGeocode(lat, lng);
+    return res.status(200).json({ place });
+  } catch (err: any) {
+    return res
+      .status(500)
+      .json({ message: "Reverse geocode failed", error: err.message });
   }
 };
 
@@ -40,8 +62,8 @@ export const estimate = async (req: Request, res: Response) => {
 
     const route =
       points.length > 2
-        ? await routeThrough(points)
-        : await routeBetween(points[0], points[points.length - 1]);
+        ? await routeThrough(points, true)
+        : await routeBetween(points[0], points[points.length - 1], true);
 
     const surge = currentSurge();
     const distanceKm = Number(route.distanceKm.toFixed(2));
@@ -61,6 +83,7 @@ export const estimate = async (req: Request, res: Response) => {
       durationMin,
       surgeMultiplier: surge,
       source: route.source,
+      routeGeometry: route.geometry ?? [],
       quotes,
       selected,
     });

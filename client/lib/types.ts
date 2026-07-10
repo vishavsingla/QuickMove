@@ -118,6 +118,7 @@ export interface Estimate {
   durationMin: number;
   surgeMultiplier: number;
   source: string;
+  routeGeometry?: [number, number][];
   quotes: Quote[];
   selected?: Quote;
 }
