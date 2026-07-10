@@ -20,6 +20,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { PaymentModeBadge } from "@/components/PaymentModeBadge";
+import { paymentModeDescription } from "@/lib/payment-mode";
 import { currency } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +45,8 @@ interface PaymentCheckoutProps {
   onOpenChange: (open: boolean) => void;
   purpose: PaymentPurpose | null;
   onSuccess?: () => void;
+  /** Wallet top-up: skip method picker and start checkout when the dialog opens. */
+  autoStart?: boolean;
 }
 
 export function PaymentCheckout({
@@ -50,6 +54,7 @@ export function PaymentCheckout({
   onOpenChange,
   purpose,
   onSuccess,
+  autoStart = false,
 }: PaymentCheckoutProps) {
   const [method, setMethod] = useState<PaymentMethod>("razorpay");
   const [loading, setLoading] = useState(false);
@@ -64,8 +69,10 @@ export function PaymentCheckout({
     order: { id: string; amount: number };
   } | null>(null);
   const [error, setError] = useState("");
+  const [autoStarted, setAutoStarted] = useState(false);
 
   const amount = purpose?.amount ?? 0;
+  const isWalletTopup = purpose?.type === "wallet_topup";
 
   const loadWallet = useCallback(async () => {
     try {
@@ -81,11 +88,12 @@ export function PaymentCheckout({
     if (open) {
       setError("");
       setMethod("razorpay");
+      setAutoStarted(false);
       loadWallet();
     }
   }, [open, loadWallet]);
 
-  const payWithWallet = async () => {
+  const payWithWallet = useCallback(async () => {
     if (!purpose || purpose.type !== "booking") {
       setError("Wallet can only pay for bookings");
       return;
@@ -102,9 +110,9 @@ export function PaymentCheckout({
     } finally {
       setLoading(false);
     }
-  };
+  }, [purpose, onOpenChange, onSuccess]);
 
-  const startRazorpay = async () => {
+  const startRazorpay = useCallback(async () => {
     if (!purpose) return;
     setLoading(true);
     setError("");
@@ -126,6 +134,7 @@ export function PaymentCheckout({
 
       if (!window.Razorpay) {
         setError("Razorpay checkout failed to load");
+        if (isWalletTopup) onOpenChange(false);
         setLoading(false);
         return;
       }
@@ -156,15 +165,28 @@ export function PaymentCheckout({
             setError(err instanceof ApiError ? err.message : "Verification failed");
           }
         },
+        modal: {
+          ondismiss: () => {
+            if (isWalletTopup) onOpenChange(false);
+          },
+        },
         theme: { color: "#2563eb" },
       });
       rzp.open();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not start checkout");
+      if (isWalletTopup) onOpenChange(false);
     } finally {
       setLoading(false);
     }
-  };
+  }, [purpose, isWalletTopup, onOpenChange, onSuccess]);
+
+  useEffect(() => {
+    if (open && autoStart && isWalletTopup && config && !autoStarted && !loading) {
+      setAutoStarted(true);
+      void startRazorpay();
+    }
+  }, [open, autoStart, isWalletTopup, config, autoStarted, loading, startRazorpay]);
 
   const completeMock = async (success: boolean) => {
     if (!mockOrder) return;
@@ -174,6 +196,7 @@ export function PaymentCheckout({
       if (!success) {
         setError("Payment cancelled or declined");
         setMockOpen(false);
+        if (isWalletTopup) onOpenChange(false);
         return;
       }
       const mock = await api.mockRazorpayComplete(mockOrder.intentId, mockOrder.order.id);
@@ -204,13 +227,16 @@ export function PaymentCheckout({
     <>
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
 
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open && !isWalletTopup} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Complete payment</DialogTitle>
+            <div className="flex flex-wrap items-center gap-2">
+              <DialogTitle className="flex-1">Complete payment</DialogTitle>
+              {config ? <PaymentModeBadge mode={config.mode} /> : null}
+            </div>
             <DialogDescription>
-              Pay {currency(amount)} securely via Razorpay test mode
-              {config?.mode === "mock" ? " (mock checkout — no keys needed)" : ""}.
+              Pay {currency(amount)} securely.
+              {config ? ` ${paymentModeDescription(config.mode)}` : ""}
             </DialogDescription>
           </DialogHeader>
 
@@ -226,7 +252,11 @@ export function PaymentCheckout({
               <CreditCard className="h-5 w-5 text-primary" />
               <div className="flex-1">
                 <p className="font-medium">Card / UPI / Netbanking</p>
-                <p className="text-xs text-muted-foreground">Powered by Razorpay</p>
+                <p className="text-xs text-muted-foreground">
+                  {config?.mode === "mock"
+                    ? "Simulated checkout (no keys)"
+                    : "Razorpay checkout.js — test mode"}
+                </p>
               </div>
               <Smartphone className="h-4 w-4 text-muted-foreground" />
             </button>
@@ -275,11 +305,19 @@ export function PaymentCheckout({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={mockOpen} onOpenChange={setMockOpen}>
+      <Dialog
+        open={mockOpen}
+        onOpenChange={(v) => {
+          setMockOpen(v);
+          if (!v && isWalletTopup) onOpenChange(false);
+        }}
+      >
         <DialogContent className="sm:max-w-sm p-0 overflow-hidden">
           <div className="bg-[#072654] px-4 py-3 text-white">
-            <p className="text-sm font-semibold">Razorpay (Mock)</p>
-            <p className="text-xs opacity-80">Test checkout — no real money</p>
+            <p className="text-sm font-semibold">
+              Test mode (mock) — {isWalletTopup ? "Wallet top-up" : "Payment"}
+            </p>
+            <p className="text-xs opacity-80">Simulated Razorpay — no real money</p>
           </div>
           <div className="space-y-4 p-4">
             <div className="rounded-lg border p-3 text-center">
