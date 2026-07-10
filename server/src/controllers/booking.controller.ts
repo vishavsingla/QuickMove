@@ -177,6 +177,7 @@ export const getBooking = async (req: AuthRequest, res: Response) => {
 
 export const cancelBooking = async (req: AuthRequest, res: Response) => {
   try {
+    const { reason } = req.body as { reason?: string };
     const booking = await prisma.booking.findUnique({ where: { id: req.params.id } });
     if (!booking) return res.status(404).json({ message: "Booking not found" });
     if (booking.userId !== req.auth!.id)
@@ -184,9 +185,17 @@ export const cancelBooking = async (req: AuthRequest, res: Response) => {
     if (["COMPLETED", "CANCELLED"].includes(booking.status))
       return res.status(400).json({ message: `Cannot cancel a ${booking.status} booking` });
 
+    const { refundBookingToWallet } = await import("../services/payments");
+    const refundAmount = await refundBookingToWallet(req.auth!.id, booking.id).catch(
+      () => null
+    );
+
     const updated = await prisma.booking.update({
       where: { id: booking.id },
-      data: { status: "CANCELLED" },
+      data: {
+        status: "CANCELLED",
+        cancelReason: reason?.trim() || null,
+      },
       include: bookingInclude,
     });
 
@@ -200,7 +209,13 @@ export const cancelBooking = async (req: AuthRequest, res: Response) => {
     }
     emitToBooking(booking.id, "booking:update", updated);
 
-    return res.status(200).json({ message: "Booking cancelled", booking: updated });
+    return res.status(200).json({
+      message: refundAmount
+        ? `Booking cancelled. ₹${refundAmount} refunded to wallet.`
+        : "Booking cancelled",
+      booking: updated,
+      refundAmount,
+    });
   } catch (err: any) {
     return res.status(500).json({ message: "Internal error", error: err.message });
   }

@@ -14,11 +14,17 @@ import couponRouter from "./routers/coupon.router";
 import { apiRateLimit } from "./middlewares/rateLimit";
 import { metricsMiddleware } from "./middlewares/metrics";
 import { metricsHandler } from "./controllers/metrics.controller";
+import { razorpayWebhook } from "./controllers/payment.controller";
 
 export const createApp = (): Express => {
   const app = express();
 
   app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+  app.post(
+    "/api/payments/webhook",
+    express.raw({ type: "application/json" }),
+    razorpayWebhook
+  );
   app.use(express.json({ limit: "1mb" }));
   app.use(
     cors({

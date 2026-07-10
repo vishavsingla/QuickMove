@@ -18,4 +18,6 @@ export const env = {
   openMeteoUrl:
     process.env.OPEN_METEO_URL || "https://geocoding-api.open-meteo.com",
   osrmUrl: process.env.OSRM_URL || "https://router.project-osrm.org",
+  razorpayKeyId: process.env.RAZORPAY_KEY_ID || "",
+  razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || "",
 };
