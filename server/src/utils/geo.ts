@@ -1,6 +1,6 @@
 import axios from "axios";
 import { env } from "../config/env";
-import { searchLocalCities, INDIAN_CITIES } from "./cityFallback";
+import { forwardGeocode, reverseGeocodeMulti } from "./geocoders";
 
 export interface GeoPoint {
   lat: number;
@@ -39,84 +39,18 @@ export const haversineKm = (
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-const mapNominatimResults = (data: unknown[]): GeoResult[] =>
-  data.map((r: any) => ({
-    displayName: r.display_name as string,
-    lat: parseFloat(r.lat),
-    lng: parseFloat(r.lon),
-  }));
-
 /**
- * Free-text address search via Nominatim with a built-in Indian city fallback
- * when the upstream service is unreachable, rate-limited, or returns nothing.
+ * Free-text address search via Photon + Nominatim + Open-Meteo, merged and ranked.
+ * Tiny offline city list is used only when every provider fails.
  */
-export const geocode = async (query: string): Promise<GeoResult[]> => {
-  if (!query || query.trim().length < 3) return [];
+export const geocode = (query: string): Promise<GeoResult[]> =>
+  forwardGeocode(query);
 
-  let results: GeoResult[] = [];
-  try {
-    const { data } = await axios.get(`${env.nominatimUrl}/search`, {
-      params: { q: query, format: "json", limit: 6, addressdetails: 0 },
-      headers: { "User-Agent": "QuickMove/1.0 (logistics demo)" },
-      timeout: 6000,
-    });
-    results = mapNominatimResults(data as unknown[]);
-  } catch {
-    /* Nominatim unreachable — fall through to local index */
-  }
-
-  if (results.length === 0) {
-    results = searchLocalCities(query);
-  }
-
-  return results;
-};
-
-const nearestLocalCity = (lat: number, lng: number): GeoResult | null => {
-  let best: GeoResult | null = null;
-  let bestKm = Infinity;
-  for (const city of INDIAN_CITIES) {
-    const d = haversineKm(lat, lng, city.lat, city.lng);
-    if (d < bestKm) {
-      bestKm = d;
-      best = city;
-    }
-  }
-  return bestKm < 80 ? best : null;
-};
-
-/** Lat/lng → human-readable address via Nominatim reverse, with local fallback. */
-export const reverseGeocode = async (
+/** Lat/lng → human-readable address via multi-provider reverse geocode. */
+export const reverseGeocode = (
   lat: number,
   lng: number
-): Promise<GeoResult> => {
-  try {
-    const { data } = await axios.get(`${env.nominatimUrl}/reverse`, {
-      params: { lat, lon: lng, format: "json" },
-      headers: { "User-Agent": "QuickMove/1.0 (logistics demo)" },
-      timeout: 6000,
-    });
-    const name = (data as { display_name?: string })?.display_name;
-    if (name) return { displayName: name, lat, lng };
-  } catch {
-    /* fall through */
-  }
-
-  const nearby = nearestLocalCity(lat, lng);
-  if (nearby) {
-    return {
-      displayName: `${nearby.displayName.split(",")[0]} area (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
-      lat,
-      lng,
-    };
-  }
-
-  return {
-    displayName: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
-    lat,
-    lng,
-  };
-};
+): Promise<GeoResult> => reverseGeocodeMulti(lat, lng);
 
 const parseOsrmGeometry = (route: any): [number, number][] | undefined => {
   const coords = route?.geometry?.coordinates as [number, number][] | undefined;

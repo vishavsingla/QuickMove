@@ -7,6 +7,12 @@ import type { PlaceResult } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+const splitDisplayName = (displayName: string) => {
+  const parts = displayName.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length <= 1) return { primary: displayName, secondary: null };
+  return { primary: parts[0], secondary: parts.slice(1).join(", ") };
+};
+
 export function AddressSearch({
   label,
   placeholder,
@@ -34,7 +40,7 @@ export function AddressSearch({
 
   const runSearch = useCallback(async (text: string) => {
     const q = text.trim();
-    if (q.length < 3) {
+    if (q.length < 2) {
       setResults([]);
       setSearched(false);
       setError(null);
@@ -59,13 +65,13 @@ export function AddressSearch({
   }, []);
 
   useEffect(() => {
-    if (query.trim().length < 3 || value?.displayName === query) {
+    if (query.trim().length < 2 || value?.displayName === query) {
       setResults([]);
       setSearched(false);
       setError(null);
       return;
     }
-    const t = setTimeout(() => runSearch(query), 350);
+    const t = setTimeout(() => runSearch(query), 300);
     return () => clearTimeout(t);
   }, [query, value, runSearch]);
 
@@ -88,7 +94,7 @@ export function AddressSearch({
 
   const handleBlur = async () => {
     const q = query.trim();
-    if (q.length < 3 || value?.displayName === q) return;
+    if (q.length < 2 || value?.displayName === q) return;
     const found = results.length ? results : await runSearch(q);
     if (found?.length) pick(found[0]);
     else if (!error) setError("No matching address — select a suggestion or click the map.");
@@ -121,22 +127,30 @@ export function AddressSearch({
         )}
         {open && results.length > 0 && (
           <div className="absolute z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-md border bg-popover shadow-lg">
-            {results.map((r, i) => (
-              <button
-                key={i}
-                type="button"
-                className="block w-full px-3 py-2 text-left text-sm hover:bg-accent"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => pick(r)}
-              >
-                {r.displayName}
-              </button>
-            ))}
+            {results.map((r, i) => {
+              const { primary, secondary } = splitDisplayName(r.displayName);
+              return (
+                <button
+                  key={`${r.lat}-${r.lng}-${i}`}
+                  type="button"
+                  className="block w-full px-3 py-2.5 text-left hover:bg-accent"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => pick(r)}
+                >
+                  <span className="block text-sm font-medium leading-snug">{primary}</span>
+                  {secondary && (
+                    <span className="block text-xs text-muted-foreground leading-snug">
+                      {secondary}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         )}
         {open && searched && !loading && results.length === 0 && !error && (
           <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover px-3 py-2 text-sm text-muted-foreground shadow-lg">
-            No places found — try a city name or click the map.
+            No places found — try an area name, landmark, or click the map.
           </div>
         )}
       </div>

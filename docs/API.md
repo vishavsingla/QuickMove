@@ -22,9 +22,21 @@ cookie).
 | GET | `/me` | any | – | → `{ user, role }` |
 
 ## Geo & pricing — `/api/geo`
+
+Address search uses a **multi-provider OSM stack** (no paid API keys):
+**Photon** (primary autocomplete) → **Nominatim** → **Open-Meteo** (tertiary), merged and
+ranked server-side. Reverse geocode uses Nominatim → Photon → BigDataCloud. A tiny offline
+city list is the last resort when all providers fail.
+
+We avoid Google Maps Geocoding (~$5–7 per 1,000 requests after a small free credit).
+Nominatim/Photon are free under OSM usage policies (cache results, identify your app via
+`User-Agent`, avoid burst traffic). On corporate networks with TLS inspection, set
+`NODE_EXTRA_CA_CERTS` to your proxy root CA if providers fail with certificate errors.
+
 | Method | Path | Auth | Body / Query | Notes |
 |---|---|---|---|---|
-| GET | `/search?q=` | – | query `q` | → `{ results: [{ displayName, lat, lng }] }` |
+| GET | `/search?q=` | – | query `q` (min 2 chars) | → `{ results: [{ displayName, lat, lng }] }` |
+| GET | `/reverse?lat=&lng=` | – | coordinates | → `{ place: { displayName, lat, lng } }` |
 | POST | `/estimate` | – | `{ pickupLat, pickupLng, dropoffLat, dropoffLng, vehicleType?, stops?: [{ lat, lng }] }` | Multi-leg route when `stops` provided |
 
 `quotes[]` = `{ vehicleType, fare: { base, distanceCost, timeCost, surgeMultiplier, total } }`.

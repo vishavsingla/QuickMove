@@ -14,5 +14,8 @@ export const env = {
   redisUrl: process.env.REDIS_URL || "",
   nominatimUrl:
     process.env.NOMINATIM_URL || "https://nominatim.openstreetmap.org",
+  photonUrl: process.env.PHOTON_URL || "https://photon.komoot.io",
+  openMeteoUrl:
+    process.env.OPEN_METEO_URL || "https://geocoding-api.open-meteo.com",
   osrmUrl: process.env.OSRM_URL || "https://router.project-osrm.org",
 };
