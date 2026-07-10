@@ -55,11 +55,20 @@ DIRECT_URL=postgresql://user:pass@ep-xxx.ap-southeast-1.aws.neon.tech/neondb?ssl
 Socket.io works without Redis on a single API instance. Add Upstash if you want the Redis adapter ready for scaling.
 
 1. Sign up at [upstash.com](https://upstash.com) → **Create database** → region near your API.
-2. Copy the **Redis URL** (`rediss://...` — TLS enabled).
+2. In the Upstash console, open your database → **Details** → copy the **TLS enabled** endpoint (**Redis URL**). Use a fresh token if you rotated credentials or see `Socket closed unexpectedly` in API logs.
+3. The URL **must** use the `rediss://` scheme (double `s` = TLS). Upstash will not work with plain `redis://`.
 
 ```
-REDIS_URL=rediss://default:xxxx@xxxx.upstash.io:6379
+REDIS_URL=rediss://default:<UPSTASH_TOKEN>@<name>-<id>.upstash.io:6379
 ```
+
+Example shape (your host and token will differ):
+
+```
+REDIS_URL=rediss://default:AbCdEf123456@magical-mosquito-162958.upstash.io:6379
+```
+
+**Render:** Dashboard → `quickmove-api` → **Environment** → add `REDIS_URL` with the full Upstash TLS URL (no quotes). If Redis is unreachable or the token is wrong/expired, the API logs once and continues in single-node Socket.io mode — realtime still works on one instance.
 
 Skip this step to run single-node Socket.io (fine for learning).
 
@@ -199,7 +208,7 @@ DATABASE_URL="postgresql://..." DIRECT_URL="postgresql://..." npm run seed
 | `REFRESH_TOKEN_PRIVATE_KEY` | Yes | Random 32+ char secret |
 | `CLIENT_ORIGIN` | Yes | Vercel frontend URL |
 | `ADMIN_SIGNUP_SECRET` | Yes | Protects admin registration |
-| `REDIS_URL` | No | Upstash URL; omit for single-node sockets |
+| `REDIS_URL` | No | Upstash **TLS** URL: `rediss://default:<token>@<host>.upstash.io:6379` — copy from Upstash console (TLS enabled). Omit for single-node sockets. |
 | `PORT` | Auto | Set by platform (5001 default) |
 
 ### Frontend (Vercel)
@@ -234,6 +243,7 @@ After all steps:
 | API 502 / timeout | Render cold start — wait 60 s, retry |
 | `prisma migrate` fails | Use `DIRECT_URL` (non-pooled) for migrations |
 | Socket won't connect | Confirm API is Render/Fly, not Vercel; check `NEXT_PUBLIC_API_URL` |
+| Redis `Socket closed unexpectedly` in Render logs | Set `REDIS_URL` to Upstash **TLS** URL (`rediss://...`). Copy a fresh token from Upstash console. Wrong/expired tokens fail once and fall back to single-node mode. |
 | DB connection refused | Neon waking from suspend — retry after a few seconds |
 | Seed fails | Run `npm run build` first, then `npm run seed:prod` |
 

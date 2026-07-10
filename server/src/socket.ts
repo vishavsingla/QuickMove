@@ -1,14 +1,19 @@
 import { Server } from "socket.io";
 import { createAdapter } from "@socket.io/redis-adapter";
-import { createClient, RedisClientType } from "redis";
 import http from "http";
 import { env } from "./config/env";
 import { prisma } from "./lib/prisma";
+import {
+  connectRedisPubSub,
+  disconnectRedisClients,
+  redactRedisUrl,
+  type RedisClient,
+} from "./lib/redis";
 import { saveMessage } from "./controllers/chat.controller";
 
 export let io: Server | null = null;
-let pubClient: RedisClientType | null = null;
-let subClient: RedisClientType | null = null;
+let pubClient: RedisClient | null = null;
+let subClient: RedisClient | null = null;
 
 const attachHandlers = (server: Server) => {
   server.on("connection", (socket) => {
@@ -156,13 +161,19 @@ export const initializeSocketIO = async (server: http.Server): Promise<Server> =
   });
 
   if (env.redisUrl) {
-    pubClient = createClient({ url: env.redisUrl });
-    subClient = pubClient.duplicate();
-    pubClient.on("error", (err) => console.error("Redis pub error", err));
-    subClient.on("error", (err) => console.error("Redis sub error", err));
-    await Promise.all([pubClient.connect(), subClient.connect()]);
-    socketServer.adapter(createAdapter(pubClient, subClient));
-    console.log(`Socket.io using Redis adapter at ${env.redisUrl}`);
+    const pair = await connectRedisPubSub(env.redisUrl);
+    if (pair) {
+      pubClient = pair.pub;
+      subClient = pair.sub;
+      socketServer.adapter(createAdapter(pubClient, subClient));
+      console.log(
+        `Socket.io using Redis adapter at ${redactRedisUrl(env.redisUrl)}`
+      );
+    } else {
+      console.log(
+        "Socket.io running in single-node mode (Redis adapter unavailable)"
+      );
+    }
   } else {
     console.log("Socket.io running in single-node mode (no REDIS_URL)");
   }
@@ -177,14 +188,9 @@ export const shutdownSocketIO = async () => {
     await new Promise<void>((resolve) => io!.close(() => resolve()));
     io = null;
   }
-  if (subClient) {
-    await subClient.quit();
-    subClient = null;
-  }
-  if (pubClient) {
-    await pubClient.quit();
-    pubClient = null;
-  }
+  await disconnectRedisClients(pubClient, subClient);
+  pubClient = null;
+  subClient = null;
 };
 
 export const getIO = (): Server => {
