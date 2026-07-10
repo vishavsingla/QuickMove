@@ -106,8 +106,33 @@ Bookings accept optional `couponCode` on `POST /api/bookings`. Payment intents c
 | POST | `/webhook` | Razorpay webhook JSON | No auth; `X-Razorpay-Signature` verified |
 
 **Razorpay modes**
-- **Real test mode**: set `RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET` (from Razorpay dashboard → Test mode). Frontend loads `checkout.razorpay.com/v1/checkout.js`.
-- **Mock mode** (default, zero credentials): server returns `order_mock_*` IDs; frontend shows a built-in checkout modal; signatures use `quickmove_mock_razorpay_secret`.
+- **Mock (default):** no env vars. UI shows **Test mode (mock)**. Server returns `order_mock_*` IDs; frontend shows a built-in checkout modal; signatures use `quickmove_mock_razorpay_secret`.
+- **Razorpay test checkout:** set `RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET` (test keys from [dashboard.razorpay.com](https://dashboard.razorpay.com) → Test mode → API Keys). UI shows **Razorpay test checkout**. Frontend loads `checkout.razorpay.com/v1/checkout.js` and creates real test orders via Razorpay API. No real money in test mode.
+
+**Enable real Razorpay test checkout (free, no real charges)**
+
+1. Sign up at [dashboard.razorpay.com](https://dashboard.razorpay.com).
+2. Ensure **Test mode** is on (keys prefixed `rzp_test_`).
+3. **Account & Settings → API Keys → Generate Key** — copy Key Id and Key Secret.
+4. On Render (`quickmove-api` → Environment) or in `server/.env` locally:
+   ```
+   RAZORPAY_KEY_ID=rzp_test_xxxxxxxx
+   RAZORPAY_KEY_SECRET=your_test_secret
+   ```
+5. Redeploy / restart API. `GET /api/payments/config` returns `{ mode: "razorpay", keyId: "rzp_test_..." }`.
+6. Pay from Wallet or a completed booking — Razorpay’s test checkout modal opens. Use [test card/UPI details](https://razorpay.com/docs/payments/payments/test-card-upi-details/).
+
+**Webhook (optional)** — Razorpay Dashboard → Developers → Webhooks:
+
+| | |
+|---|---|
+| URL | `https://quickmove-api.onrender.com/api/payments/webhook` |
+| Auth | `X-Razorpay-Signature` HMAC verified with `RAZORPAY_KEY_SECRET` |
+| Events | `payment.captured` (recommended) |
+
+Synchronous `POST /razorpay/verify` after checkout is sufficient for most flows; webhooks help if the client closes before verify.
+
+**Stripe:** not supported in this codebase. QuickMove targets INR; **Razorpay is recommended**. Stripe would require a separate integration (Checkout Sessions, webhooks, likely non-INR or multi-currency support).
 
 On success: booking marked `PAID`, invoice created, driver wallet credited 90% of fare. Wallet top-ups credit customer balance.
 

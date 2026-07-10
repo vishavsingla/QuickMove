@@ -173,6 +173,57 @@ CORS_ORIGINS=http://localhost:3000,https://quickmove.vercel.app,https://*.vercel
 
 Both Express CORS and Socket.io read origins from env. Preflight `OPTIONS` requests are handled automatically.
 
+---
+
+## Step 6 — Razorpay test checkout (optional, free)
+
+QuickMove is an **INR** app. **Razorpay** is the supported payment gateway (test mode is free; no Stripe integration in this repo).
+
+**Without keys (default):** the app uses a built-in **mock checkout** — fine for demos, zero signup.
+
+**With Razorpay test keys:** the frontend opens the real Razorpay test modal (`checkout.razorpay.com`). Still **no real money** — only test cards/UPI.
+
+### 6a — Create a free Razorpay test account
+
+1. Sign up at [dashboard.razorpay.com](https://dashboard.razorpay.com) (free).
+2. Stay in **Test mode** (toggle in the top bar — keys start with `rzp_test_`).
+3. Go to **Account & Settings → API Keys** → **Generate Key**.
+4. Copy **Key Id** (`rzp_test_…`) and **Key Secret** (shown once).
+
+### 6b — Set keys on Render
+
+Render Dashboard → `quickmove-api` → **Environment** → add:
+
+| Variable | Value |
+|----------|-------|
+| `RAZORPAY_KEY_ID` | `rzp_test_xxxxxxxx` |
+| `RAZORPAY_KEY_SECRET` | your test secret |
+
+Redeploy the API. The Wallet page badge switches from **Test mode (mock)** to **Razorpay test checkout**.
+
+For local dev, add the same vars to `server/.env` (see `server/.env.example`).
+
+### 6c — Webhook (optional, for async payment events)
+
+In Razorpay Dashboard → **Developers → Webhooks** → **Add New Webhook**:
+
+| Field | Value |
+|-------|-------|
+| URL | `https://quickmove-api.onrender.com/api/payments/webhook` |
+| Events | `payment.captured` (and optionally `payment.failed`) |
+| Secret | Use your **test** Key Secret (QuickMove verifies `X-Razorpay-Signature` with the same secret) |
+
+Replace the host if your API is on Fly.io or another domain. Webhooks are optional — the app verifies payments synchronously via `POST /api/payments/razorpay/verify` after checkout.
+
+### 6d — Test a payment
+
+1. Open Wallet on your Vercel URL — confirm the badge says **Razorpay test checkout**.
+2. Click **Add via Razorpay test** — the real Razorpay modal opens.
+3. Use Razorpay [test cards](https://razorpay.com/docs/payments/payments/test-card-upi-details/) (e.g. card `4111 1111 1111 1111`, any future expiry, CVV `123`).
+4. Complete a trip payment from a completed booking the same way.
+
+**Stripe:** not implemented. For INR, use Razorpay. Stripe would be a separate feature (different currency flow, webhooks, and checkout SDK).
+
 **Verify CORS from your machine:**
 
 ```bash
@@ -186,7 +237,7 @@ Expect `200`, `Access-Control-Allow-Origin: https://quickmove.vercel.app`, and `
 
 ---
 
-## Step 6 — Seed the production database (once)
+## Step 7 — Seed the production database (once)
 
 Creates demo users, drivers, and pricing rules. Run **from your laptop** against Neon:
 
@@ -230,6 +281,8 @@ DATABASE_URL="postgresql://..." DIRECT_URL="postgresql://..." npm run seed
 | `CORS_ORIGINS` | No | Comma-separated origins; overrides `CLIENT_ORIGIN` when set |
 | `ADMIN_SIGNUP_SECRET` | Yes | Protects admin registration |
 | `REDIS_URL` | No | Upstash **TLS** URL: `rediss://default:<token>@<host>.upstash.io:6379` — copy from Upstash console (TLS enabled). Omit for single-node sockets. |
+| `RAZORPAY_KEY_ID` | No | Razorpay **test** key (`rzp_test_…`). Omit for built-in mock checkout. |
+| `RAZORPAY_KEY_SECRET` | No | Razorpay **test** secret. Must be set together with `RAZORPAY_KEY_ID`. |
 | `PORT` | Auto | Set by platform (5001 default) |
 
 ### Frontend (Vercel)
@@ -251,6 +304,7 @@ After all steps:
 - [ ] Driver login → toggle availability → see offers
 - [ ] Realtime: open booking detail — socket connects (browser devtools → Network → WS)
 - [ ] Admin: `admin@quickmove.dev` → dashboard stats load
+- [ ] Wallet badge: **Test mode (mock)** without keys, or **Razorpay test checkout** after setting `RAZORPAY_KEY_*` on the API
 
 **Socket debug:** In browser console, no CORS errors to API origin. WS URL should be your `NEXT_PUBLIC_API_URL`, not `localhost:5001`.
 
@@ -280,6 +334,7 @@ After all steps:
 4. Vercel project → set `NEXT_PUBLIC_API_URL`
 5. Run seed once against production DB
 6. Save generated JWT secrets / `ADMIN_SIGNUP_SECRET`
+7. (Optional) Razorpay test keys + webhook URL for real test checkout
 
 ### Already in the repo
 
