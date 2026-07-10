@@ -359,9 +359,6 @@ function DriverInner() {
                     {NEXT_ACTION[activeJob.status]!.label}
                   </Button>
                 )}
-                {user && (
-                  <ChatPanel bookingId={activeJob.id} userId={user.id} role="DRIVER" />
-                )}
               </div>
             ) : (
               <div className="grid place-items-center py-12 text-center text-sm text-muted-foreground">
@@ -412,6 +409,26 @@ function DriverInner() {
           </CardContent>
         </Card>
       </div>
+
+      {activeJob && user && (
+        <Card className="mt-6 border-primary/30 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Chat with customer</CardTitle>
+            <p className="text-sm font-normal text-muted-foreground">
+              Message the customer about pickup, delays, or access details.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <ChatPanel
+              bookingId={activeJob.id}
+              userId={user.id}
+              role="DRIVER"
+              title="Chat with customer"
+              bare
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

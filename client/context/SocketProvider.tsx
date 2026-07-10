@@ -4,7 +4,6 @@ import {
   createContext,
   useContext,
   useEffect,
-  useRef,
   useState,
   ReactNode,
 } from "react";
@@ -24,25 +23,25 @@ const SocketContext = createContext<SocketState>({
 
 export function SocketProvider({ children }: { children: ReactNode }) {
   const { user, driverId, role } = useAuth();
-  const socketRef = useRef<Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const socket = io(API_URL, { transports: ["websocket", "polling"] });
-    socketRef.current = socket;
+    const s = io(API_URL, { transports: ["websocket", "polling"] });
+    setSocket(s);
 
-    socket.on("connect", () => setConnected(true));
-    socket.on("disconnect", () => setConnected(false));
+    s.on("connect", () => setConnected(true));
+    s.on("disconnect", () => setConnected(false));
 
     return () => {
-      socket.disconnect();
-      socketRef.current = null;
+      s.disconnect();
+      setSocket(null);
+      setConnected(false);
     };
   }, []);
 
   // (Re)register rooms whenever identity changes.
   useEffect(() => {
-    const socket = socketRef.current;
     if (!socket) return;
     const doRegister = () =>
       socket.emit("register", {
@@ -55,10 +54,10 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     return () => {
       socket.off("connect", doRegister);
     };
-  }, [user?.id, driverId, role]);
+  }, [socket, user?.id, driverId, role]);
 
   return (
-    <SocketContext.Provider value={{ socket: socketRef.current, connected }}>
+    <SocketContext.Provider value={{ socket, connected }}>
       {children}
     </SocketContext.Provider>
   );

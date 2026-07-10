@@ -13,10 +13,14 @@ export function ChatPanel({
   bookingId,
   userId,
   role,
+  title = "Chat",
+  bare = false,
 }: {
   bookingId: string;
   userId: string;
   role: Role;
+  title?: string;
+  bare?: boolean;
 }) {
   const { socket } = useSocket();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -36,6 +40,18 @@ export function ChatPanel({
   useEffect(() => {
     load();
   }, [load]);
+
+  // Join the booking room so chat:message / chat:typing events are delivered.
+  useEffect(() => {
+    if (!socket || !bookingId) return;
+    const join = () => socket.emit("booking:join", { bookingId });
+    join();
+    socket.on("connect", join);
+    return () => {
+      socket.off("connect", join);
+      socket.emit("booking:leave", { bookingId });
+    };
+  }, [socket, bookingId]);
 
   useEffect(() => {
     if (!socket) return;
@@ -63,7 +79,7 @@ export function ChatPanel({
 
   const send = () => {
     const body = text.trim();
-    if (!body || !socket) return;
+    if (!body || !socket || !socket.connected) return;
     socket.emit("chat:send", {
       bookingId,
       senderUserId: userId,
@@ -84,13 +100,15 @@ export function ChatPanel({
     }, 1500);
   };
 
-  return (
-    <Card>
-      <CardHeader className="py-3">
-        <CardTitle className="text-base">Chat</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="h-48 overflow-y-auto rounded-md border bg-muted/30 p-2 text-sm">
+  const panel = (
+    <>
+      {!bare && (
+        <CardHeader className="py-3">
+          <CardTitle className="text-base">{title}</CardTitle>
+        </CardHeader>
+      )}
+      <CardContent className={bare ? "p-0 space-y-3" : "space-y-3"}>
+        <div className="h-56 overflow-y-auto rounded-md border bg-muted/30 p-2 text-sm">
           {loading ? (
             <div className="grid h-full place-items-center">
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -111,7 +129,13 @@ export function ChatPanel({
                     }`}
                   >
                     <p className="text-[10px] opacity-70">
-                      {m.senderRole === "DRIVER" ? "Driver" : m.senderRole === "USER" ? "You" : m.senderRole}
+                      {mine
+                        ? "You"
+                        : m.senderRole === "DRIVER"
+                          ? "Driver"
+                          : m.senderRole === "USER"
+                            ? "Customer"
+                            : m.senderRole}
                     </p>
                     <p>{m.body}</p>
                   </div>
@@ -134,14 +158,19 @@ export function ChatPanel({
           <Input
             value={text}
             onChange={(e) => onChange(e.target.value)}
-            placeholder="Type a message…"
+            placeholder={socket?.connected ? "Type a message…" : "Connecting…"}
             maxLength={2000}
+            disabled={!socket?.connected}
           />
-          <Button type="submit" size="icon" disabled={!text.trim()}>
+          <Button type="submit" size="icon" disabled={!text.trim() || !socket?.connected}>
             <Send className="h-4 w-4" />
           </Button>
         </form>
       </CardContent>
-    </Card>
+    </>
   );
+
+  if (bare) return panel;
+
+  return <Card>{panel}</Card>;
 }

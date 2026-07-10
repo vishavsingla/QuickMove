@@ -19,11 +19,45 @@ jest.mock("../../src/utils/geo", () => {
 });
 
 import request from "supertest";
+import http from "http";
+import { io as ioClient, Socket as ClientSocket } from "socket.io-client";
 import { createApp } from "../../src/app";
+import { initializeSocketIO, shutdownSocketIO } from "../../src/socket";
 import { prisma } from "../../src/lib/prisma";
 import { resetDb, disconnect } from "../helpers";
 
 const app = createApp();
+let httpServer: http.Server;
+let serverPort: number;
+
+const connectSocket = (): Promise<ClientSocket> =>
+  new Promise((resolve, reject) => {
+    const socket = ioClient(`http://127.0.0.1:${serverPort}`, {
+      transports: ["websocket"],
+    });
+    socket.on("connect", () => resolve(socket));
+    socket.on("connect_error", reject);
+  });
+
+beforeAll(async () => {
+  httpServer = http.createServer(app);
+  await initializeSocketIO(httpServer);
+  await new Promise<void>((resolve) => {
+    httpServer.listen(0, "127.0.0.1", () => {
+      const addr = httpServer.address();
+      serverPort = typeof addr === "object" && addr ? addr.port : 0;
+      resolve();
+    });
+  });
+});
+
+afterAll(async () => {
+  await shutdownSocketIO();
+  await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+  await disconnect();
+});
+
+beforeEach(resetDb);
 
 const registerUser = async () => {
   const res = await request(app).post("/api/auth/register/user").send({
@@ -71,9 +105,6 @@ const bookingPayload = {
   dropoffLng: 77.6245,
   vehicleType: "CAR",
 };
-
-beforeEach(resetDb);
-afterAll(disconnect);
 
 describe("multi-stop bookings", () => {
   it("creates a booking with waypoints and returns ordered stops", async () => {
@@ -164,5 +195,73 @@ describe("booking chat", () => {
       .get(`/api/bookings/${booking.body.booking.id}/chat`)
       .set("Authorization", `Bearer ${other.body.token}`);
     expect(res.status).toBe(403);
+  });
+
+  it("delivers chat messages over WebSocket when both sides join the booking room", async () => {
+    const { token: userToken, userId: custId } = await registerUser();
+    const { token: driverToken, userId: drvUserId, driverId } =
+      await registerApprovedDriver("drv-ws@test.dev", "+912222222225");
+
+    const bookingRes = await request(app)
+      .post("/api/bookings")
+      .set("Authorization", `Bearer ${userToken}`)
+      .send(bookingPayload);
+    const bookingId = bookingRes.body.booking.id as string;
+
+    await request(app)
+      .post(`/api/driver/bookings/${bookingId}/accept`)
+      .set("Authorization", `Bearer ${driverToken}`);
+
+    const customerSocket = await connectSocket();
+    const driverSocket = await connectSocket();
+
+    customerSocket.emit("register", { userId: custId });
+    driverSocket.emit("register", { userId: drvUserId, driverId });
+
+    customerSocket.emit("booking:join", { bookingId });
+    driverSocket.emit("booking:join", { bookingId });
+
+    const waitForMessage = (
+      socket: ClientSocket,
+      body: string
+    ): Promise<string> =>
+      new Promise((resolve, reject) => {
+        const timer = setTimeout(
+          () => reject(new Error(`timeout waiting for "${body}"`)),
+          5000
+        );
+        const handler = (msg: { body: string }) => {
+          if (msg.body !== body) return;
+          clearTimeout(timer);
+          socket.off("chat:message", handler);
+          resolve(msg.body);
+        };
+        socket.on("chat:message", handler);
+      });
+
+    driverSocket.emit("chat:send", {
+      bookingId,
+      senderUserId: drvUserId,
+      senderRole: "DRIVER",
+      body: "I'm outside",
+    });
+
+    await expect(waitForMessage(customerSocket, "I'm outside")).resolves.toBe(
+      "I'm outside"
+    );
+
+    customerSocket.emit("chat:send", {
+      bookingId,
+      senderUserId: custId,
+      senderRole: "USER",
+      body: "Coming down",
+    });
+
+    await expect(waitForMessage(driverSocket, "Coming down")).resolves.toBe(
+      "Coming down"
+    );
+
+    customerSocket.disconnect();
+    driverSocket.disconnect();
   });
 });
