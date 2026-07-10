@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2, IndianRupee, Plus } from "lucide-react";
 import { api } from "@/lib/api";
 import { RequireRole } from "@/components/RequireRole";
+import { PaymentCheckout } from "@/components/PaymentCheckout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,11 +17,15 @@ function WalletInner() {
   const [txns, setTxns] = useState<any[]>([]);
   const [amount, setAmount] = useState("500");
   const [loading, setLoading] = useState(true);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [topupAmount, setTopupAmount] = useState(0);
+  const [paymentMode, setPaymentMode] = useState<"razorpay" | "mock">("mock");
 
   const load = async () => {
-    const r = await api.getWallet();
-    setBalance(r.wallet.balance);
-    setTxns(r.transactions);
+    const [w, c] = await Promise.all([api.getWallet(), api.getPaymentConfig()]);
+    setBalance(w.wallet.balance);
+    setTxns(w.transactions);
+    setPaymentMode(c.mode);
     setLoading(false);
   };
 
@@ -28,16 +33,23 @@ function WalletInner() {
     load();
   }, []);
 
-  const topUp = async () => {
+  const instantTopUp = async () => {
     const v = Number(amount);
     if (!v || v <= 0) return;
     try {
       await api.topUpWallet(v);
-      toast({ title: "Wallet topped up" });
+      toast({ title: "Wallet topped up (test gateway)" });
       load();
     } catch {
       toast({ title: "Top-up failed", variant: "destructive" });
     }
+  };
+
+  const openRazorpayTopup = () => {
+    const v = Number(amount);
+    if (!v || v <= 0) return;
+    setTopupAmount(v);
+    setCheckoutOpen(true);
   };
 
   if (loading)
@@ -60,17 +72,20 @@ function WalletInner() {
         <CardContent>
           <p className="text-4xl font-bold">{currency(balance)}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Test gateway — top-ups are instant in demo mode.
+            Add money via Razorpay ({paymentMode === "mock" ? "mock checkout" : "test mode"}) or instant test credit.
           </p>
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             <Input
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               className="max-w-[140px]"
             />
-            <Button onClick={topUp}>
-              <Plus className="mr-1 h-4 w-4" /> Top up
+            <Button onClick={openRazorpayTopup}>
+              <Plus className="mr-1 h-4 w-4" /> Add via Razorpay
+            </Button>
+            <Button variant="outline" onClick={instantTopUp}>
+              Instant test top-up
             </Button>
           </div>
         </CardContent>
@@ -108,6 +123,16 @@ function WalletInner() {
           )}
         </CardContent>
       </Card>
+
+      <PaymentCheckout
+        open={checkoutOpen}
+        onOpenChange={setCheckoutOpen}
+        purpose={{ type: "wallet_topup", amount: topupAmount }}
+        onSuccess={() => {
+          toast({ title: "Wallet topped up successfully" });
+          load();
+        }}
+      />
     </div>
   );
 }

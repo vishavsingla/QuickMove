@@ -7,7 +7,7 @@ import {
   useState,
   ReactNode,
 } from "react";
-import { api, tokenStore } from "@/lib/api";
+import { api, bootstrapAuth, tokenStore } from "@/lib/api";
 import type { AuthResult, Role, User } from "@/lib/types";
 
 interface AuthState {
@@ -30,24 +30,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = tokenStore.get();
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    api
-      .me()
-      .then((res) => {
+    let cancelled = false;
+
+    (async () => {
+      if (!tokenStore.hasSession()) {
+        if (!cancelled) setLoading(false);
+        return;
+      }
+
+      const res = await bootstrapAuth();
+      if (cancelled) return;
+
+      if (res) {
         setUser(res.user);
         setRole(res.role as Role);
         setDriverId(
           res.user?.driver?.id ?? localStorage.getItem(DRIVER_KEY) ?? null
         );
-      })
-      .catch(() => {
-        tokenStore.clearAll();
-      })
-      .finally(() => setLoading(false));
+      }
+      setLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const setSession = (result: AuthResult) => {

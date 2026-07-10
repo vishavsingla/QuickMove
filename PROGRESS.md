@@ -41,10 +41,22 @@
 - Prometheus `/metrics` + OpenTelemetry bootstrap stub
 - 51 backend tests passing
 
-### Iteration 6 — Payouts + push (current)
+### Iteration 6 — Payouts + push
 - Driver bank withdrawal API + earnings page UI (PR #22)
 - Web push stubs: service worker, PushSubscription, subscribe API
 - 64 backend tests, 9 client RTL tests; CI green
 
+### Iteration 7 — Razorpay + parity gaps (current)
+- Razorpay test-mode integration with key-optional mock checkout
+  (order → checkout modal → HMAC verify → webhook)
+- `PaymentCheckout` component: Wallet / Card / UPI via Razorpay
+- Wallet top-up via Razorpay flow + legacy instant test credit
+- Saved-address quick-pick on `/book`, scheduled booking datetime picker
+- Cancellation modal with reason + automatic wallet refund when paid
+- ETA countdown on customer tracking page
+- 81 backend tests; client build + lint green
+- Auth session persistence fix: single-flight refresh, bootstrap rehydrate on reload
+
 ### Next
 - Mobile app (React Native) — future scope
+- Invoice PDF export

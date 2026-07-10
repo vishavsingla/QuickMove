@@ -3,6 +3,14 @@
 ## [Unreleased]
 
 ### Added
+- Razorpay payment gateway (test mode) with key-optional mock checkout fallback
+- Endpoints: `POST /razorpay/order`, `POST /razorpay/verify`, `POST /webhook`, `GET /config`
+- `PaymentCheckout` modal: Wallet / Card / UPI, loading/success/failure states
+- Wallet top-up via Razorpay checkout + receipt after payment
+- Saved-address quick-pick chips on booking page
+- Scheduled booking datetime picker on `/book`
+- Cancellation with reason + automatic wallet refund for paid bookings
+- ETA countdown component on live tracking
 - Web push notification stubs: service worker, `PushSubscription` model, subscribe API
 - Driver bank withdrawal: `POST /api/driver/bank`, `POST /api/driver/withdraw`, `GET /api/driver/payouts`
 - Full OpenTelemetry Node SDK (OTLP exporter when `OTEL_EXPORTER_OTLP_ENDPOINT` set)

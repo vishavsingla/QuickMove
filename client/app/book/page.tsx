@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { VEHICLE_META, currency } from "@/lib/ui";
-import type { Estimate, PlaceResult, VehicleType } from "@/lib/types";
+import type { Estimate, PlaceResult, SavedAddress, VehicleType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type MapTarget = "pickup" | "dropoff" | { stop: number };
@@ -33,6 +33,9 @@ function BookInner() {
   const [couponDesc, setCouponDesc] = useState("");
   const [mapTarget, setMapTarget] = useState<MapTarget>("pickup");
   const [reverseLoading, setReverseLoading] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [scheduleForLater, setScheduleForLater] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState("");
 
   const routePoints = useMemo(
     () => [pickup, ...stops, dropoff].filter(Boolean) as PlaceResult[],
@@ -41,6 +44,20 @@ function BookInner() {
 
   const hasValidCoords = (p: PlaceResult | null) =>
     !!p && Number.isFinite(p.lat) && Number.isFinite(p.lng) && (p.lat !== 0 || p.lng !== 0);
+
+  useEffect(() => {
+    api.listAddresses().then((r) => setSavedAddresses(r.addresses)).catch(() => undefined);
+  }, []);
+
+  const applySavedAddress = (addr: SavedAddress, target: "pickup" | "dropoff") => {
+    const place: PlaceResult = {
+      displayName: addr.address,
+      lat: addr.lat,
+      lng: addr.lng,
+    };
+    if (target === "pickup") setPickup(place);
+    else setDropoff(place);
+  };
 
   useEffect(() => {
     if (!hasValidCoords(pickup) || !hasValidCoords(dropoff)) {
@@ -205,6 +222,9 @@ function BookInner() {
               })),
             }
           : {}),
+        ...(scheduleForLater && scheduledAt
+          ? { scheduledTime: new Date(scheduledAt).toISOString() }
+          : {}),
       });
       toast({ title: "Booking created", description: "Finding you a driver…" });
       router.push(`/bookings/${res.booking.id}`);
@@ -234,6 +254,34 @@ function BookInner() {
             <CardTitle>Plan your move</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {savedAddresses.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Saved addresses</p>
+                <div className="flex flex-wrap gap-2">
+                  {savedAddresses.map((a) => (
+                    <div key={a.id} className="flex gap-1">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => applySavedAddress(a, "pickup")}
+                      >
+                        {a.label} → pickup
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => applySavedAddress(a, "dropoff")}
+                      >
+                        → drop
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <AddressSearch
               label="Pickup location"
               placeholder="Search pickup address (e.g. Chandigarh)"
@@ -277,6 +325,26 @@ function BookInner() {
               onSelect={setDropoff}
               onFocusField={() => setMapTarget("dropoff")}
             />
+
+            <div className="rounded-lg border p-3 space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  checked={scheduleForLater}
+                  onChange={(e) => setScheduleForLater(e.target.checked)}
+                  className="rounded"
+                />
+                <Clock className="h-4 w-4" /> Schedule for later
+              </label>
+              {scheduleForLater && (
+                <Input
+                  type="datetime-local"
+                  value={scheduledAt}
+                  min={new Date().toISOString().slice(0, 16)}
+                  onChange={(e) => setScheduledAt(e.target.value)}
+                />
+              )}
+            </div>
 
             {estimating && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">

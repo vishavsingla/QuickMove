@@ -13,7 +13,7 @@ Last updated: 2026-07-10
 - [x] Root README
 - [x] Playwright e2e (7 tests) + CI job
 - [x] Redis Socket.io adapter (horizontal scale)
-- [x] Payments + wallet (test gateway + wallet debit, driver earnings)
+- [x] Payments + wallet (Razorpay test/mock gateway + wallet debit, driver earnings)
 - [x] Multi-stop bookings + in-app chat (WebSocket)
 - [x] Refresh tokens + rate limiting + Helmet security headers
 - [x] k6 load test scripts + Terraform stubs
@@ -24,6 +24,12 @@ Last updated: 2026-07-10
 - [x] Prometheus metrics + OpenTelemetry SDK
 - [x] Driver payout withdrawal UI + API
 - [x] Web push notification stubs (service worker + subscribe API)
+- [x] Razorpay order/verify/webhook + mock checkout (key-optional)
+- [x] Saved-address quick-pick on booking flow
+- [x] Scheduled bookings UI
+- [x] Cancellation with reason + wallet refund
+- [x] ETA countdown on live tracking
+- [x] Polished payment checkout modal (Wallet / Card / UPI)
 
 ## In progress
 - [ ] Porter/Lalamove parity: mobile app (future)
@@ -31,6 +37,7 @@ Last updated: 2026-07-10
 ## Backlog — Frontend
 - [x] Driver earnings dashboard
 - [x] Component tests (RTL)
+- [ ] Invoice PDF export (HTML download exists)
 
 ## Backlog — DevOps
 - [x] Terraform stub (`deploy/terraform/`)
@@ -40,7 +47,7 @@ Last updated: 2026-07-10
 
 ## Stop conditions
 - [x] No placeholders / dummy UI (functional dashboards; KYC/push use intentional stubs)
-- [x] All tests green in CI (64 backend + 9 RTL + 7 e2e)
+- [x] All tests green in CI (81 backend + 9 RTL + 7 e2e)
 - [x] k8s manifests ready (`deploy/k8s/`)
 - [x] Deep docs complete (HLD, LLD, API, RUNBOOK)
 - [x] Security review passed (helmet headers, RBAC, no hash leak tests)

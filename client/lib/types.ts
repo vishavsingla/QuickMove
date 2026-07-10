@@ -75,6 +75,7 @@ export interface Booking {
   rating: number | null;
   createdAt: string;
   scheduledTime: string | null;
+  cancelReason?: string | null;
   userId: string;
   driverId: string | null;
   driver?: Driver | null;

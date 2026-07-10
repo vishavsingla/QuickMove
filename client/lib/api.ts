@@ -15,6 +15,13 @@ export const API_URL =
 const TOKEN_KEY = "quickmove_token";
 const REFRESH_KEY = "quickmove_refresh";
 
+const NO_REFRESH_PATHS = [
+  "/api/auth/refresh",
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/logout",
+];
+
 export const tokenStore = {
   get: () =>
     typeof window === "undefined" ? null : localStorage.getItem(TOKEN_KEY),
@@ -28,7 +35,65 @@ export const tokenStore = {
     tokenStore.clear();
     tokenStore.clearRefresh();
   },
+  hasSession: () => !!(tokenStore.get() || tokenStore.getRefresh()),
 };
+
+let refreshInFlight: Promise<boolean> | null = null;
+
+const shouldAttemptRefresh = (path: string) =>
+  !NO_REFRESH_PATHS.some((p) => path.startsWith(p));
+
+/** Single-flight refresh so parallel 401s don't rotate the token twice. */
+export async function refreshAccessToken(): Promise<boolean> {
+  const refresh = tokenStore.getRefresh();
+  if (!refresh) return false;
+  if (refreshInFlight) return refreshInFlight;
+
+  refreshInFlight = (async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken: refresh }),
+      });
+      if (!res.ok) {
+        tokenStore.clearAll();
+        return false;
+      }
+      const data = await res.json();
+      tokenStore.set(data.token);
+      if (data.refreshToken) tokenStore.setRefresh(data.refreshToken);
+      return true;
+    } catch {
+      // Network blip — keep stored session for a later retry.
+      return false;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+
+  return refreshInFlight;
+}
+
+/** Rehydrate user from persisted tokens (access and/or refresh). */
+export async function bootstrapAuth(): Promise<{
+  user: any;
+  role: string;
+} | null> {
+  if (!tokenStore.hasSession()) return null;
+
+  if (!tokenStore.get() && tokenStore.getRefresh()) {
+    const ok = await refreshAccessToken();
+    if (!ok) return null;
+  }
+
+  try {
+    return await request<{ user: any; role: string }>("/api/auth/me");
+  } catch {
+    tokenStore.clearAll();
+    return null;
+  }
+}
 
 export class ApiError extends Error {
   status: number;
@@ -53,19 +118,14 @@ async function request<T>(
     },
   });
 
-  if (res.status === 401 && retry && tokenStore.getRefresh()) {
-    const refreshed = await fetch(`${API_URL}/api/auth/refresh`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken: tokenStore.getRefresh() }),
-    });
-    if (refreshed.ok) {
-      const data = await refreshed.json();
-      tokenStore.set(data.token);
-      if (data.refreshToken) tokenStore.setRefresh(data.refreshToken);
-      return request<T>(path, options, false);
-    }
-    tokenStore.clearAll();
+  if (
+    res.status === 401 &&
+    retry &&
+    shouldAttemptRefresh(path) &&
+    tokenStore.getRefresh()
+  ) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) return request<T>(path, options, false);
   }
 
   const text = await res.text();
@@ -141,9 +201,10 @@ export const api = {
   myBookings: () => request<{ bookings: Booking[] }>("/api/bookings"),
   getBooking: (id: string) =>
     request<{ booking: Booking }>(`/api/bookings/${id}`),
-  cancelBooking: (id: string) =>
-    request<{ booking: Booking }>(`/api/bookings/${id}/cancel`, {
+  cancelBooking: (id: string, reason?: string) =>
+    request<{ booking: Booking; refundAmount?: number }>(`/api/bookings/${id}/cancel`, {
       method: "POST",
+      body: JSON.stringify({ reason }),
     }),
   rateBooking: (id: string, rating: number) =>
     request<{ booking: Booking }>(`/api/bookings/${id}/rate`, {
@@ -316,6 +377,13 @@ export const api = {
     }),
 
   // payments & wallet
+  getPaymentConfig: () =>
+    request<{
+      mode: "razorpay" | "mock";
+      keyId: string | null;
+      currency: string;
+      methods: string[];
+    }>("/api/payments/config"),
   getWallet: () =>
     request<{
       wallet: { balance: number; currency: string };
@@ -346,6 +414,36 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ method, token }),
     }),
+  createRazorpayOrder: (body: {
+    bookingId?: string;
+    topup?: boolean;
+    amount?: number;
+  }) =>
+    request<{
+      order: { id: string; amount: number; currency: string };
+      keyId: string | null;
+      mode: "razorpay" | "mock";
+      intentId: string;
+      amount: number;
+    }>("/api/payments/razorpay/order", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  verifyRazorpayPayment: (body: {
+    intentId: string;
+    orderId: string;
+    paymentId: string;
+    signature: string;
+  }) =>
+    request<{ message: string }>("/api/payments/razorpay/verify", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  mockRazorpayComplete: (intentId: string, orderId: string) =>
+    request<{ orderId: string; paymentId: string; signature: string }>(
+      "/api/payments/razorpay/mock-complete",
+      { method: "POST", body: JSON.stringify({ intentId, orderId }) }
+    ),
 
   validateCoupon: (code: string, orderAmount: number) =>
     request<{

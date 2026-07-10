@@ -7,11 +7,21 @@ import { api, ApiError } from "@/lib/api";
 import { RequireRole } from "@/components/RequireRole";
 import { LiveMap, MapMarker } from "@/components/LiveMap";
 import { ChatPanel } from "@/components/ChatPanel";
+import { PaymentCheckout } from "@/components/PaymentCheckout";
+import { EtaCountdown } from "@/components/EtaCountdown";
 import { useSocket } from "@/context/SocketProvider";
 import { useAuth } from "@/context/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { STATUS_META, VEHICLE_META, currency } from "@/lib/ui";
 import type { Booking, BookingStatus } from "@/lib/types";
@@ -31,8 +41,11 @@ function TrackInner({ id }: { id: string }) {
   const [booking, setBooking] = useState<Booking | null>(null);
   const [driverPos, setDriverPos] = useState<{ lat: number; lng: number } | null>(null);
   const [ratingValue, setRatingValue] = useState(0);
-  const [paying, setPaying] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [payOpen, setPayOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
 
   const load = useCallback(() => {
     api
@@ -88,17 +101,30 @@ function TrackInner({ id }: { id: string }) {
     return m;
   }, [booking, driverPos]);
 
-  const cancel = async () => {
+  const payable = booking
+    ? Math.max(0, booking.estimatedCost - (booking.discountAmount || 0))
+    : 0;
+
+  const confirmCancel = async () => {
+    setCancelling(true);
     try {
-      const r = await api.cancelBooking(id);
+      const r = await api.cancelBooking(id, cancelReason.trim() || undefined);
       setBooking(r.booking);
-      toast({ title: "Booking cancelled" });
+      setCancelOpen(false);
+      toast({
+        title: "Booking cancelled",
+        description: r.refundAmount
+          ? `₹${r.refundAmount} refunded to your wallet`
+          : undefined,
+      });
     } catch (err) {
       toast({
         title: "Could not cancel",
         description: err instanceof ApiError ? err.message : "",
         variant: "destructive",
       });
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -108,26 +134,8 @@ function TrackInner({ id }: { id: string }) {
       await api.rateBooking(id, value);
       toast({ title: "Thanks for rating!" });
       load();
-    } catch (err) {
+    } catch {
       toast({ title: "Could not submit rating", variant: "destructive" });
-    }
-  };
-
-  const pay = async (method: "wallet" | "test_card", token?: string) => {
-    setPaying(true);
-    try {
-      const { intent } = await api.createPaymentIntent(id);
-      await api.confirmPayment(intent.id, method, token);
-      toast({ title: "Payment successful" });
-      load();
-    } catch (err: unknown) {
-      toast({
-        title: "Payment failed",
-        description: err instanceof ApiError ? err.message : "Try again",
-        variant: "destructive",
-      });
-    } finally {
-      setPaying(false);
     }
   };
 
@@ -175,7 +183,11 @@ function TrackInner({ id }: { id: string }) {
             </Badge>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Timeline */}
+            <EtaCountdown
+              status={booking.status}
+              estimatedDurationMin={Math.round(booking.estimatedDuration)}
+            />
+
             {activeIdx >= 0 && (
               <ol className="space-y-2">
                 {TIMELINE.map((s, i) => (
@@ -207,13 +219,14 @@ function TrackInner({ id }: { id: string }) {
                   </p>
                 ))}
               <p><span className="text-muted-foreground">To:</span> {booking.dropoffLocation}</p>
+              {booking.scheduledTime && (
+                <p className="text-muted-foreground">
+                  Scheduled: {new Date(booking.scheduledTime).toLocaleString()}
+                </p>
+              )}
               <p className="flex justify-between pt-1">
                 <span className="text-muted-foreground">{booking.estimatedDistance} km · {Math.round(booking.estimatedDuration)} min</span>
-                <span className="font-semibold">
-                  {currency(
-                    Math.max(0, booking.estimatedCost - (booking.discountAmount || 0))
-                  )}
-                </span>
+                <span className="font-semibold">{currency(payable)}</span>
               </p>
               {booking.discountAmount ? (
                 <p className="text-xs text-emerald-600">
@@ -239,37 +252,15 @@ function TrackInner({ id }: { id: string }) {
             )}
 
             {canCancel && (
-              <Button variant="destructive" className="w-full" onClick={cancel}>
+              <Button variant="destructive" className="w-full" onClick={() => setCancelOpen(true)}>
                 <XCircle className="mr-2 h-4 w-4" /> Cancel booking
               </Button>
             )}
 
             {booking.status === "COMPLETED" && booking.paymentStatus !== "PAID" && (
-              <div className="rounded-lg border p-3 space-y-2">
-                <p className="text-sm font-medium">
-                  Pay{" "}
-                  {currency(
-                    Math.max(0, booking.estimatedCost - (booking.discountAmount || 0))
-                  )}
-                </p>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <Button
-                    className="flex-1"
-                    disabled={paying}
-                    onClick={() => pay("wallet")}
-                  >
-                    Pay with wallet
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    disabled={paying}
-                    onClick={() => pay("test_card", "test_success")}
-                  >
-                    Test card (success)
-                  </Button>
-                </div>
-              </div>
+              <Button className="w-full" size="lg" onClick={() => setPayOpen(true)}>
+                Pay {currency(payable)}
+              </Button>
             )}
 
             {booking.status === "COMPLETED" && booking.paymentStatus === "PAID" && (
@@ -312,6 +303,44 @@ function TrackInner({ id }: { id: string }) {
           <ChatPanel bookingId={id} userId={user.id} role="USER" />
         )}
       </div>
+
+      <PaymentCheckout
+        open={payOpen}
+        onOpenChange={setPayOpen}
+        purpose={{ type: "booking", bookingId: id, amount: payable }}
+        onSuccess={() => {
+          toast({ title: "Payment successful" });
+          load();
+        }}
+      />
+
+      <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel booking</DialogTitle>
+          </DialogHeader>
+          <Textarea
+            placeholder="Reason for cancellation (optional)"
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            rows={3}
+          />
+          {booking.paymentStatus === "PAID" && (
+            <p className="text-sm text-muted-foreground">
+              Your fare will be refunded to your wallet.
+            </p>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelOpen(false)}>
+              Keep booking
+            </Button>
+            <Button variant="destructive" disabled={cancelling} onClick={confirmCancel}>
+              {cancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Confirm cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

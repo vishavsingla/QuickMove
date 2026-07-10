@@ -48,7 +48,7 @@ Nominatim/Photon are free under OSM usage policies (cache results, identify your
 | GET | `/` | – | Customer's bookings (newest first) |
 | GET | `/:id` | – | Booking with `stops[]` (owner, assigned driver, or admin only) |
 | GET | `/:id/invoice` | – | Tax invoice JSON + HTML (`?format=html` for raw HTML) |
-| POST | `/:id/cancel` | – | Allowed unless COMPLETED/CANCELLED |
+| POST | `/:id/cancel` | `{ reason? }` | Allowed unless COMPLETED/CANCELLED; refunds paid fares to wallet |
 | POST | `/:id/rate` | `{ rating: 1..5 }` | Only on COMPLETED; updates driver rating |
 
 ## Driver — `/api/driver` (DRIVER)
@@ -95,10 +95,21 @@ Bookings accept optional `couponCode` on `POST /api/bookings`. Payment intents c
 ## Payments — `/api/payments` (USER)
 | Method | Path | Body | Notes |
 |---|---|---|---|
+| GET | `/config` | – | → `{ mode: razorpay\|mock, keyId, currency, methods[] }` |
 | GET | `/wallet` | – | → `{ wallet, transactions[] }` |
-| POST | `/wallet/topup` | `{ amount }` | Test-mode instant credit |
+| POST | `/wallet/topup` | `{ amount }` | Legacy instant test credit |
 | POST | `/intents` | `{ bookingId }` | Create payment intent for completed booking |
-| POST | `/intents/:id/confirm` | `{ method: wallet\|test_card, token? }` | On success credits driver wallet 90% of fare |
+| POST | `/intents/:id/confirm` | `{ method: wallet\|test_card, token? }` | Wallet or legacy test card |
+| POST | `/razorpay/order` | `{ bookingId }` or `{ topup: true, amount }` | Create Razorpay order (real test API or mock) |
+| POST | `/razorpay/verify` | `{ intentId, orderId, paymentId, signature }` | HMAC signature verification |
+| POST | `/razorpay/mock-complete` | `{ intentId, orderId }` | Mock-only: returns test paymentId + signature |
+| POST | `/webhook` | Razorpay webhook JSON | No auth; `X-Razorpay-Signature` verified |
+
+**Razorpay modes**
+- **Real test mode**: set `RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET` (from Razorpay dashboard → Test mode). Frontend loads `checkout.razorpay.com/v1/checkout.js`.
+- **Mock mode** (default, zero credentials): server returns `order_mock_*` IDs; frontend shows a built-in checkout modal; signatures use `quickmove_mock_razorpay_secret`.
+
+On success: booking marked `PAID`, invoice created, driver wallet credited 90% of fare. Wallet top-ups credit customer balance.
 
 ## Chat — `/api/bookings/:id/chat` (USER, DRIVER on assigned booking)
 | Method | Path | Notes |
