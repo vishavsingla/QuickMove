@@ -10,6 +10,27 @@ test.describe("authentication", () => {
     await expect(page.getByText("Plan your move")).toBeVisible();
   });
 
+  test("session persists across page reload", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByLabel("Email").fill("user@quickmove.dev");
+    await page.getByLabel("Password").fill("password123");
+    await page.getByRole("button", { name: "Log in" }).click();
+    await page.waitForURL(/\/book/, { timeout: 15_000 });
+
+    const before = await page.evaluate(() => ({
+      token: localStorage.getItem("quickmove_token"),
+      refresh: localStorage.getItem("quickmove_refresh"),
+    }));
+    expect(before.token).toBeTruthy();
+    expect(before.refresh).toBeTruthy();
+
+    await page.reload();
+    await expect(page.getByText("Plan your move")).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByText("Demo Customer")).toBeVisible();
+  });
+
   test("admin can log in and see admin console", async ({ page }) => {
     await page.goto("/login");
     await page.getByLabel("Email").fill("admin@quickmove.dev");

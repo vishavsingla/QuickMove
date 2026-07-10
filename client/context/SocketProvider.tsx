@@ -22,7 +22,7 @@ const SocketContext = createContext<SocketState>({
 });
 
 export function SocketProvider({ children }: { children: ReactNode }) {
-  const { user, driverId, role } = useAuth();
+  const { user, driverId, role, loading } = useAuth();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
 
@@ -42,7 +42,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
   // (Re)register rooms whenever identity changes.
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || loading) return;
     const doRegister = () =>
       socket.emit("register", {
         userId: user?.id,
@@ -54,7 +54,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     return () => {
       socket.off("connect", doRegister);
     };
-  }, [socket, user?.id, driverId, role]);
+  }, [socket, user?.id, driverId, role, loading]);
 
   return (
     <SocketContext.Provider value={{ socket, connected }}>
