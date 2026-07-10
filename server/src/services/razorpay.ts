@@ -59,6 +59,9 @@ export const createRazorpayOrder = async (
 export const paymentSignatureSecret = (): string =>
   isRazorpayConfigured() ? env.razorpayKeySecret! : MOCK_RAZORPAY_SECRET;
 
+const toUtf8Bytes = (value: string): Uint8Array =>
+  new Uint8Array(Buffer.from(value, "utf8"));
+
 export const computePaymentSignature = (
   orderId: string,
   paymentId: string,
@@ -74,8 +77,8 @@ export const verifyPaymentSignature = (
   const expected = computePaymentSignature(orderId, paymentId);
   try {
     return crypto.timingSafeEqual(
-      Buffer.from(expected, "utf8"),
-      Buffer.from(signature, "utf8")
+      toUtf8Bytes(expected),
+      toUtf8Bytes(signature)
     );
   } catch {
     return false;
@@ -92,8 +95,8 @@ export const verifyWebhookSignature = (body: string, signature: string): boolean
     .digest("hex");
   try {
     return crypto.timingSafeEqual(
-      Buffer.from(expected, "utf8"),
-      Buffer.from(signature, "utf8")
+      toUtf8Bytes(expected),
+      toUtf8Bytes(signature)
     );
   } catch {
     return false;

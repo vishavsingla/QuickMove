@@ -1,9 +1,9 @@
-import { Request, Response, NextFunction } from "express";
-import { verifyAccessToken, JwtPayload } from "../utils/jwt";
+import type { Request, Response, NextFunction } from "express";
+import { verifyAccessToken, type JwtPayload } from "../utils/jwt";
 
-export interface AuthRequest extends Request {
+export type AuthRequest = Request & {
   auth?: JwtPayload;
-}
+};
 
 const extractToken = (req: Request): string | null => {
   const header = req.headers.authorization;
@@ -12,8 +12,8 @@ const extractToken = (req: Request): string | null => {
   if (cookie) {
     const match = cookie
       .split(";")
-      .map((c) => c.trim())
-      .find((c) => c.startsWith("accessToken="));
+      .map((c: string) => c.trim())
+      .find((c: string) => c.startsWith("accessToken="));
     if (match) return match.split("=")[1];
   }
   return null;
