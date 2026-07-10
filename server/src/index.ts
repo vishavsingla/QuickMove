@@ -13,8 +13,8 @@ const start = async () => {
 
   await initializeSocketIO(httpServer);
 
-  httpServer.listen(env.port, () => {
-    console.log(`QuickMove API running on http://localhost:${env.port}`);
+  httpServer.listen(env.port, "0.0.0.0", () => {
+    console.log(`QuickMove API listening on port ${env.port}`);
   });
 
   const shutdown = async () => {

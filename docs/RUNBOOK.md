@@ -19,6 +19,9 @@ cd client && npm run test:e2e # Playwright (needs running stack)
 
 ## 2. Deployment
 
+### Free cloud ($0)
+See **[DEPLOYMENT_FREE.md](DEPLOYMENT_FREE.md)** — Vercel (client) + Render or Fly.io (API) + Neon (Postgres) + Upstash (Redis, optional).
+
 ### Docker Compose (production-like)
 ```bash
 docker compose -f docker-compose.yml up --build
@@ -36,7 +39,7 @@ kubectl apply -f deploy/k8s/
 | `DATABASE_URL` | `postgresql://...` | Prisma connection |
 | `ACCESS_TOKEN_PRIVATE_KEY` | random 32+ chars | JWT signing |
 | `REFRESH_TOKEN_PRIVATE_KEY` | random 32+ chars | Refresh signing |
-| `CLIENT_ORIGIN` | `https://app.example.com` | CORS |
+| `CLIENT_ORIGIN` | `https://app.example.com` | CORS + Socket.io |
 | `ADMIN_SIGNUP_SECRET` | secret | First admin bootstrap |
 
 ### Optional

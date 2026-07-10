@@ -53,6 +53,7 @@ cd client && npm run build         # typecheck + production build
 - [API contract](docs/API.md)
 - [PRD](docs/PRD.md)
 - [Architecture overview](ARCHITECTURE.md)
+- [**Free cloud deployment**](docs/DEPLOYMENT_FREE.md) — Vercel + Render + Neon ($0)
 
 ## Project structure
 

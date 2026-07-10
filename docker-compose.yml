@@ -30,6 +30,7 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile
+    command: sh -c "npx prisma migrate deploy && node dist/index.js"
     restart: unless-stopped
     ports:
       - "5001:5001"
