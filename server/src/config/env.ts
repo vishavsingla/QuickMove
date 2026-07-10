@@ -1,10 +1,15 @@
 import dotenv from "dotenv";
+import { parseCorsOrigins } from "./cors";
 
 dotenv.config();
 
+const corsOrigins = parseCorsOrigins();
+
 export const env = {
   port: Number(process.env.PORT || 5001),
-  clientOrigin: process.env.CLIENT_ORIGIN || "http://localhost:3000",
+  /** @deprecated Use corsOrigins — kept for backward compatibility */
+  clientOrigin: corsOrigins[0] || "http://localhost:3000",
+  corsOrigins,
   accessTokenSecret:
     process.env.ACCESS_TOKEN_PRIVATE_KEY || "quickmove_dev_access_secret",
   refreshTokenSecret:

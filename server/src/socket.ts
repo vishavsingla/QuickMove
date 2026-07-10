@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 import { createAdapter } from "@socket.io/redis-adapter";
 import http from "http";
+import { createCorsOriginCallback, corsOptions } from "./config/cors";
 import { env } from "./config/env";
 import { prisma } from "./lib/prisma";
 import {
@@ -154,9 +155,10 @@ const attachHandlers = (server: Server) => {
 export const initializeSocketIO = async (server: http.Server): Promise<Server> => {
   const socketServer = new Server(server, {
     cors: {
-      origin: env.clientOrigin,
-      methods: ["GET", "POST"],
-      credentials: true,
+      origin: createCorsOriginCallback(env.corsOrigins),
+      methods: corsOptions.methods,
+      allowedHeaders: corsOptions.allowedHeaders,
+      credentials: corsOptions.credentials,
     },
   });
 

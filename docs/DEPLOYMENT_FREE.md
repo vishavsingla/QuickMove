@@ -87,7 +87,8 @@ Config file: [`render.yaml`](../render.yaml) at repo root.
 |----------|-------|
 | `DATABASE_URL` | Neon pooled URL |
 | `DIRECT_URL` | Neon direct URL |
-| `CLIENT_ORIGIN` | Your Vercel URL (set after Step 4), e.g. `https://quickmove.vercel.app` |
+| `CLIENT_ORIGIN` | Your Vercel production URL (set after Step 4), e.g. `https://quickmove.vercel.app` — **no trailing slash** |
+| `CORS_ORIGINS` | Optional. Comma-separated list if you need localhost + production + Vercel previews, e.g. `http://localhost:3000,https://quickmove.vercel.app,https://*.vercel.app` |
 
 Render auto-generates `ACCESS_TOKEN_PRIVATE_KEY`, `REFRESH_TOKEN_PRIVATE_KEY`, and `ADMIN_SIGNUP_SECRET` — save `ADMIN_SIGNUP_SECRET` somewhere safe.
 
@@ -154,15 +155,34 @@ No trailing slash. Must be `https://` in production.
 
 ## Step 5 — Wire CORS (API ↔ frontend)
 
-Go back to Render (or Fly) and set:
+Go back to Render (or Fly) and set **one** of:
 
 ```
 CLIENT_ORIGIN=https://quickmove.vercel.app
 ```
 
-Must match the Vercel URL exactly (scheme + host, no trailing slash). Redeploy if needed.
+Must match your Vercel **production** URL exactly (scheme + host, **no trailing slash**). Redeploy after changing.
 
-Both Express CORS and Socket.io CORS read `CLIENT_ORIGIN` from env — no code changes required.
+For Vercel preview deployments too, set `CORS_ORIGINS` instead (comma-separated, no spaces required):
+
+```
+CORS_ORIGINS=http://localhost:3000,https://quickmove.vercel.app,https://*.vercel.app
+```
+
+`CORS_ORIGINS` overrides `CLIENT_ORIGIN` when set. Wildcards like `https://*.vercel.app` match preview URLs.
+
+Both Express CORS and Socket.io read origins from env. Preflight `OPTIONS` requests are handled automatically.
+
+**Verify CORS from your machine:**
+
+```bash
+curl -i -X OPTIONS "https://quickmove-api.onrender.com/api/auth/register/user" \
+  -H "Origin: https://quickmove.vercel.app" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: content-type"
+```
+
+Expect `200`, `Access-Control-Allow-Origin: https://quickmove.vercel.app`, and `Access-Control-Allow-Credentials: true`.
 
 ---
 
@@ -206,7 +226,8 @@ DATABASE_URL="postgresql://..." DIRECT_URL="postgresql://..." npm run seed
 | `DIRECT_URL` | Yes | Neon direct (migrations) |
 | `ACCESS_TOKEN_PRIVATE_KEY` | Yes | Random 32+ char secret |
 | `REFRESH_TOKEN_PRIVATE_KEY` | Yes | Random 32+ char secret |
-| `CLIENT_ORIGIN` | Yes | Vercel frontend URL |
+| `CLIENT_ORIGIN` | Yes | Vercel production frontend URL (no trailing slash) |
+| `CORS_ORIGINS` | No | Comma-separated origins; overrides `CLIENT_ORIGIN` when set |
 | `ADMIN_SIGNUP_SECRET` | Yes | Protects admin registration |
 | `REDIS_URL` | No | Upstash **TLS** URL: `rediss://default:<token>@<host>.upstash.io:6379` — copy from Upstash console (TLS enabled). Omit for single-node sockets. |
 | `PORT` | Auto | Set by platform (5001 default) |
@@ -239,7 +260,7 @@ After all steps:
 
 | Symptom | Fix |
 |---------|-----|
-| CORS error on login | `CLIENT_ORIGIN` must exactly match Vercel URL |
+| CORS error on login/register | Set `CLIENT_ORIGIN` to your exact Vercel URL (no trailing slash), or use `CORS_ORIGINS` with `https://*.vercel.app` for previews |
 | API 502 / timeout | Render cold start — wait 60 s, retry |
 | `prisma migrate` fails | Use `DIRECT_URL` (non-pooled) for migrations |
 | Socket won't connect | Confirm API is Render/Fly, not Vercel; check `NEXT_PUBLIC_API_URL` |
@@ -267,7 +288,7 @@ After all steps:
 - `server/Dockerfile` — multi-stage production image (Prisma, openssl)
 - `client/Dockerfile` — Next.js standalone image
 - `client/vercel.json` — Vercel build settings
-- CORS + Socket.io read `CLIENT_ORIGIN` from env
+- CORS + Socket.io read `CLIENT_ORIGIN` / `CORS_ORIGINS` from env
 - Client API + sockets use `NEXT_PUBLIC_API_URL` from env
 
 ---

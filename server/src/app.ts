@@ -1,6 +1,7 @@
 import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
+import { createCorsOriginCallback, corsOptions } from "./config/cors";
 import { env } from "./config/env";
 import authRouter from "./routers/auth.router";
 import geoRouter from "./routers/geo.router";
@@ -28,9 +29,8 @@ export const createApp = (): Express => {
   app.use(express.json({ limit: "1mb" }));
   app.use(
     cors({
-      origin: env.clientOrigin,
-      credentials: true,
-      optionsSuccessStatus: 200,
+      origin: createCorsOriginCallback(env.corsOrigins),
+      ...corsOptions,
     })
   );
   app.use(apiRateLimit);
