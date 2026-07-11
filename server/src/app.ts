@@ -20,6 +20,14 @@ import { razorpayWebhook } from "./controllers/payment.controller";
 export const createApp = (): Express => {
   const app = express();
 
+  // Render/Fly/nginx set X-Forwarded-For; required for express-rate-limit in production.
+  const trustProxy =
+    process.env.TRUST_PROXY ??
+    (process.env.NODE_ENV === "production" ? "1" : "0");
+  if (trustProxy !== "0" && trustProxy !== "false") {
+    app.set("trust proxy", Number(trustProxy) || 1);
+  }
+
   app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
   app.post(
     "/api/payments/webhook",

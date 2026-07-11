@@ -28,6 +28,17 @@ describe("security", () => {
     expect(res.headers["x-frame-options"]).toBeTruthy();
   });
 
+  it("accepts X-Forwarded-For when trust proxy is enabled", async () => {
+    const prev = process.env.TRUST_PROXY;
+    process.env.TRUST_PROXY = "1";
+    const proxied = createApp();
+    const res = await request(proxied)
+      .get("/health")
+      .set("X-Forwarded-For", "203.0.113.1");
+    expect(res.status).toBe(200);
+    process.env.TRUST_PROXY = prev;
+  });
+
   it("returns 401 for protected routes without a token", async () => {
     const res = await request(app).get("/api/bookings");
     expect(res.status).toBe(401);
