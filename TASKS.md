@@ -1,6 +1,6 @@
 # QuickMove — Task Tracker
 
-Last updated: 2026-07-10
+Last updated: 2026-07-12
 
 ## Done
 - [x] Design docs + API contract (PR #1)
@@ -30,14 +30,18 @@ Last updated: 2026-07-10
 - [x] Cancellation with reason + wallet refund
 - [x] ETA countdown on live tracking
 - [x] Polished payment checkout modal (Wallet / Card / UPI)
+- [x] Invoice PDF export (`?format=pdf`, client download)
+- [x] Render trust proxy (`TRUST_PROXY=1`) for rate limiting behind load balancer
+- [x] Mobile nav sheet menu + responsive padding on book/tracking pages
+- [x] README deployed-stack quick reference
 
 ## In progress
-- [ ] Porter/Lalamove parity: mobile app (future)
+- _(none)_
 
 ## Backlog — Frontend
 - [x] Driver earnings dashboard
 - [x] Component tests (RTL)
-- [ ] Invoice PDF export (HTML download exists)
+- [x] Invoice PDF export (HTML + PDF download)
 
 ## Backlog — DevOps
 - [x] Terraform stub (`deploy/terraform/`)
@@ -45,9 +49,14 @@ Last updated: 2026-07-10
 - [x] Prometheus scrape config + `/metrics` endpoint
 - [x] OpenTelemetry SDK + Grafana dashboard stubs
 
+## Backlog — Future
+- [ ] Porter/Lalamove parity: mobile app (React Native)
+- [ ] Driver demand heatmap (admin analytics)
+- [ ] Production web push (VAPID keys + real gateway)
+
 ## Stop conditions
 - [x] No placeholders / dummy UI (functional dashboards; KYC/push use intentional stubs)
-- [x] All tests green in CI (81 backend + 9 RTL + 7 e2e)
+- [x] All tests green in CI (83 backend + 18 RTL + 7 e2e)
 - [x] k8s manifests ready (`deploy/k8s/`)
 - [x] Deep docs complete (HLD, LLD, API, RUNBOOK)
 - [x] Security review passed (helmet headers, RBAC, no hash leak tests)

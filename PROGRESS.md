@@ -57,6 +57,13 @@
 - 81 backend tests; client build + lint green
 - Auth session persistence fix: single-flight refresh, bootstrap rehydrate on reload
 
+### Iteration 8 — Production polish (current)
+- Render `TRUST_PROXY=1` fixes `ERR_ERL_UNEXPECTED_X_FORWARDED_FOR` with express-rate-limit
+- Invoice PDF download via `pdfkit` (`GET /api/bookings/:id/invoice?format=pdf`)
+- Mobile nav sheet menu; responsive padding on book + tracking pages
+- Driver earnings load-error retry state
+- README deployed-stack quick reference table
+- 83 backend tests; client lint + build + 18 RTL tests green
+
 ### Next
 - Mobile app (React Native) — future scope
-- Invoice PDF export

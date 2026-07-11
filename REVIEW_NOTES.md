@@ -20,12 +20,23 @@
 - All stop conditions hold: 64 backend + 9 RTL + 7 e2e, CI green
 - Security: helmet, RBAC, push subscribe requires auth
 
+## 2026-07-12 — Production polish pass
+
+### Shipped
+- Trust proxy for Render (`TRUST_PROXY=1`) — fixes rate-limit `X-Forwarded-For` errors
+- Invoice PDF download (server pdfkit + client blob download)
+- Mobile nav sheet + responsive layout tweaks on book/tracking
+- Driver earnings retry on load failure
+- README production quick reference
+
 ### Open findings
 - Mobile app (React Native) — future scope
+- Driver demand heatmap — backlog
 - Production web push needs VAPID keys and real push gateway
 
 ### Security
 - Passwords hashed with bcrypt (cost 10)
 - Admin signup guarded by `ADMIN_SIGNUP_SECRET`
-- CORS restricted to `CLIENT_ORIGIN`
+- CORS restricted to `CLIENT_ORIGIN` / `CORS_ORIGINS`
+- Trust proxy enabled in production for correct client IP behind Render
 - No SQL injection risk (Prisma parameterized queries)

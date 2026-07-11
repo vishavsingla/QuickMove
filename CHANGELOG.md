@@ -3,6 +3,11 @@
 ## [Unreleased]
 
 ### Added
+- Invoice PDF export: `GET /api/bookings/:id/invoice?format=pdf` (pdfkit) + client download
+- Render trust proxy: `TRUST_PROXY=1` in `render.yaml` and `app.set('trust proxy')` for rate limiting
+- Mobile navigation sheet menu on small screens
+- Driver earnings page error state with retry
+- README deployed-stack URL table and health-check smoke test
 - Razorpay payment gateway (test mode) with key-optional mock checkout fallback
 - Endpoints: `POST /razorpay/order`, `POST /razorpay/verify`, `POST /webhook`, `GET /config`
 - `PaymentCheckout` modal: Wallet / Card / UPI, loading/success/failure states
