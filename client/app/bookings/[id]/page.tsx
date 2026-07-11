@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { Loader2, Phone, Star, XCircle, CheckCircle2, Download } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
-import { RequireRole } from "@/components/RequireRole";
 import { LiveMap, MapMarker } from "@/components/LiveMap";
 import { ChatPanel } from "@/components/ChatPanel";
 import { PaymentCheckout } from "@/components/PaymentCheckout";
@@ -22,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { STATUS_META, VEHICLE_META, currency } from "@/lib/ui";
 import type { Booking, BookingStatus } from "@/lib/types";
@@ -35,13 +35,16 @@ const TIMELINE: BookingStatus[] = [
 ];
 
 function TrackInner({ id }: { id: string }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { socket } = useSocket();
   const { toast } = useToast();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [driverPos, setDriverPos] = useState<{ lat: number; lng: number } | null>(null);
   const [ratingValue, setRatingValue] = useState(0);
   const [notFound, setNotFound] = useState(false);
+  const [needsPhone, setNeedsPhone] = useState(false);
+  const [phoneInput, setPhoneInput] = useState("");
+  const [verifying, setVerifying] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
@@ -49,6 +52,7 @@ function TrackInner({ id }: { id: string }) {
   const [invoiceLoading, setInvoiceLoading] = useState(false);
 
   const load = useCallback(() => {
+    if (!user) return;
     api
       .getBooking(id)
       .then((r) => {
@@ -57,11 +61,36 @@ function TrackInner({ id }: { id: string }) {
           setDriverPos({ lat: r.booking.driverLat, lng: r.booking.driverLng });
       })
       .catch(() => setNotFound(true));
-  }, [id]);
+  }, [id, user]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    if (authLoading) return;
+    if (user) {
+      load();
+    } else {
+      setNeedsPhone(true);
+    }
+  }, [authLoading, user, load]);
+
+  const verifyPhone = async () => {
+    if (phoneInput.trim().length < 8) return;
+    setVerifying(true);
+    try {
+      const r = await api.trackGuestBooking(id, phoneInput.trim());
+      setBooking(r.booking);
+      setNeedsPhone(false);
+      if (r.booking.driverLat && r.booking.driverLng)
+        setDriverPos({ lat: r.booking.driverLat, lng: r.booking.driverLng });
+    } catch (err) {
+      toast({
+        title: "Could not verify",
+        description: err instanceof ApiError ? err.message : "Check your phone number",
+        variant: "destructive",
+      });
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   useEffect(() => {
     if (!socket) return;
@@ -157,6 +186,53 @@ function TrackInner({ id }: { id: string }) {
       setInvoiceLoading(false);
     }
   };
+
+  if (authLoading)
+    return (
+      <div className="grid min-h-[60vh] place-items-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+
+  if (needsPhone && !booking)
+    return (
+      <div className="container flex min-h-[60vh] items-center justify-center px-4 py-12">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Track your move</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Enter the phone number you used when booking to view live tracking.
+            </p>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                type="tel"
+                placeholder="+91 98765 43210"
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value)}
+              />
+            </div>
+            <Button
+              className="w-full"
+              disabled={phoneInput.trim().length < 8 || verifying}
+              onClick={verifyPhone}
+            >
+              {verifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              View booking
+            </Button>
+            <p className="text-center text-xs text-muted-foreground">
+              Have an account?{" "}
+              <a href={`/login?next=/bookings/${id}`} className="text-primary underline-offset-4 hover:underline">
+                Log in
+              </a>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
 
   if (notFound)
     return <div className="container py-20 text-center text-muted-foreground">Booking not found.</div>;
@@ -255,19 +331,19 @@ function TrackInner({ id }: { id: string }) {
               </div>
             )}
 
-            {canCancel && (
+            {user && canCancel && (
               <Button variant="destructive" className="w-full" onClick={() => setCancelOpen(true)}>
                 <XCircle className="mr-2 h-4 w-4" /> Cancel booking
               </Button>
             )}
 
-            {booking.status === "COMPLETED" && booking.paymentStatus !== "PAID" && (
+            {user && booking.status === "COMPLETED" && booking.paymentStatus !== "PAID" && (
               <Button className="w-full" size="lg" onClick={() => setPayOpen(true)}>
                 Pay {currency(payable)}
               </Button>
             )}
 
-            {booking.status === "COMPLETED" && booking.paymentStatus === "PAID" && (
+            {user && booking.status === "COMPLETED" && booking.paymentStatus === "PAID" && (
               <div className="space-y-2">
                 <p className="text-center text-sm text-emerald-600">Payment complete ✓</p>
                 <Button
@@ -286,7 +362,7 @@ function TrackInner({ id }: { id: string }) {
               </div>
             )}
 
-            {booking.status === "COMPLETED" && (
+            {user && booking.status === "COMPLETED" && (
               <div className="rounded-lg border p-3 text-center">
                 {booking.rating ? (
                   <p className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
@@ -362,9 +438,5 @@ function TrackInner({ id }: { id: string }) {
 export default function TrackPage() {
   const params = useParams();
   const id = String(params.id);
-  return (
-    <RequireRole role="USER">
-      <TrackInner id={id} />
-    </RequireRole>
-  );
+  return <TrackInner id={id} />;
 }

@@ -3,6 +3,13 @@
 ## [Unreleased]
 
 ### Added
+- Guest-first booking (Uber-style): browse, estimate, and book without login
+- `POST /api/bookings/guest` — create booking with name + phone; auto-creates or links user by phone
+- `GET /api/bookings/guest/track` — verify phone to view booking without full login
+- Public `/book` page (no `RequireRole` gate); `GuestCheckoutDialog` collects phone at confirm
+- Guest navbar: "Book a move" + Log in for unauthenticated users
+- Phone-based tracking gate on `/bookings/[id]` when session expired
+- Guest booking rate limit (20/15min per IP) + integration tests
 - Invoice PDF export: `GET /api/bookings/:id/invoice?format=pdf` (pdfkit) + client download
 - Render trust proxy: `TRUST_PROXY=1` in `render.yaml` and `app.set('trust proxy')` for rate limiting
 - Mobile navigation sheet menu on small screens

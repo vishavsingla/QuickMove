@@ -54,8 +54,7 @@ export default function Home() {
             </h1>
             <p className="mt-5 max-w-md text-lg text-muted-foreground">
               QuickMove connects you with nearby drivers for bikes, tempos and
-              trucks. Get an instant quote, book in seconds, and track your move
-              live.
+              trucks. Get an instant quote, book in seconds — no account required.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg">
@@ -124,7 +123,7 @@ export default function Home() {
           </div>
           <div className="mt-12 text-center">
             <Button asChild size="lg">
-              <Link href="/signup">Get started free</Link>
+              <Link href="/book">Book without an account</Link>
             </Button>
           </div>
         </div>

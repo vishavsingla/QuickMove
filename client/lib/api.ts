@@ -6,6 +6,7 @@ import type {
   PlaceResult,
   AppNotification,
   SavedAddress,
+  User,
   VehicleType,
 } from "./types";
 
@@ -235,6 +236,22 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  createGuestBooking: (body: Record<string, unknown>) =>
+    request<{
+      booking: Booking;
+      token: string;
+      refreshToken: string;
+      user: User;
+      role: string;
+      isNewUser: boolean;
+    }>("/api/bookings/guest", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  trackGuestBooking: (bookingId: string, phoneNumber: string) =>
+    request<{ booking: Booking }>(
+      `/api/bookings/guest/track?bookingId=${encodeURIComponent(bookingId)}&phoneNumber=${encodeURIComponent(phoneNumber)}`
+    ),
   myBookings: () => request<{ bookings: Booking[] }>("/api/bookings"),
   getBooking: (id: string) =>
     request<{ booking: Booking }>(`/api/bookings/${id}`),

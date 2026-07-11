@@ -1,141 +1,145 @@
-import { Response } from "express";
-import { VehicleType, Prisma } from "@prisma/client";
+import { Request, Response } from "express";
+import { VehicleType } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { AuthRequest } from "../middlewares/auth";
-import { routeBetween, routeThrough, GeoPoint } from "../utils/geo";
-import { estimateFare, currentSurge } from "../utils/pricing";
-import { offerBookingToDrivers } from "../services/matching";
-import { notify } from "../services/notifications";
-import { emitToBooking } from "../services/realtime";
-import { applyCouponToBooking } from "../services/coupons";
-import { bookingsCreatedTotal } from "../observability/metrics";
+import { bookingInclude, createBookingRecord } from "../services/bookingCreate";
+import { findOrCreateGuestUser, normalizePhone } from "../services/guestUser";
+import { createSession } from "../services/sessions";
 
-const bookingInclude: Prisma.BookingInclude = {
-  driver: {
-    select: {
-      id: true,
-      name: true,
-      phoneNumber: true,
-      vehicleType: true,
-      licensePlate: true,
-      rating: true,
-      currentLat: true,
-      currentLng: true,
-    },
-  },
-  user: { select: { id: true, name: true, phoneNumber: true } },
-  stops: { orderBy: { orderIndex: "asc" } },
+const sanitizeUser = (user: { hashedPassword?: string; [key: string]: unknown }) => {
+  const clone = { ...user };
+  delete clone.hashedPassword;
+  return clone;
+};
+
+const parseBookingBody = (body: Record<string, unknown>) => {
+  const {
+    pickupLocation,
+    pickupLat,
+    pickupLng,
+    dropoffLocation,
+    dropoffLat,
+    dropoffLng,
+    vehicleType,
+    scheduledTime,
+    stops,
+    couponCode,
+  } = body;
+
+  if (
+    !pickupLocation ||
+    !dropoffLocation ||
+    !vehicleType ||
+    pickupLat == null ||
+    pickupLng == null ||
+    dropoffLat == null ||
+    dropoffLng == null
+  )
+    return { error: "Missing required booking fields" as const };
+
+  if (!Object.values(VehicleType).includes(vehicleType as VehicleType))
+    return { error: "Invalid vehicle type" as const };
+
+  return {
+    pickupLocation: String(pickupLocation),
+    pickupLat: Number(pickupLat),
+    pickupLng: Number(pickupLng),
+    dropoffLocation: String(dropoffLocation),
+    dropoffLat: Number(dropoffLat),
+    dropoffLng: Number(dropoffLng),
+    vehicleType: vehicleType as VehicleType,
+    scheduledTime: scheduledTime ? String(scheduledTime) : undefined,
+    stops: Array.isArray(stops) ? stops : undefined,
+    couponCode: couponCode ? String(couponCode) : undefined,
+  };
 };
 
 export const createBooking = async (req: AuthRequest, res: Response) => {
   try {
-    const {
-      pickupLocation,
-      pickupLat,
-      pickupLng,
-      dropoffLocation,
-      dropoffLat,
-      dropoffLng,
-      vehicleType,
-      scheduledTime,
-      stops,
-      couponCode,
-    } = req.body;
+    const parsed = parseBookingBody(req.body);
+    if ("error" in parsed) return res.status(400).json({ message: parsed.error });
 
-    if (
-      !pickupLocation ||
-      !dropoffLocation ||
-      !vehicleType ||
-      pickupLat == null ||
-      pickupLng == null ||
-      dropoffLat == null ||
-      dropoffLng == null
-    )
-      return res.status(400).json({ message: "Missing required booking fields" });
-
-    if (!Object.values(VehicleType).includes(vehicleType))
-      return res.status(400).json({ message: "Invalid vehicle type" });
-
-    const points: GeoPoint[] = [
-      { lat: Number(pickupLat), lng: Number(pickupLng) },
-      ...(Array.isArray(stops)
-        ? stops.map((s: any) => ({ lat: Number(s.lat), lng: Number(s.lng) }))
-        : []),
-      { lat: Number(dropoffLat), lng: Number(dropoffLng) },
-    ];
-
-    const route =
-      points.length > 2
-        ? await routeThrough(points)
-        : await routeBetween(points[0], points[points.length - 1]);
-    const distanceKm = Number(route.distanceKm.toFixed(2));
-    const durationMin = Number(route.durationMin.toFixed(1));
-    const fare = estimateFare(vehicleType, distanceKm, durationMin, currentSurge());
-
-    const booking = await prisma.booking.create({
-      data: {
+    try {
+      const booking = await createBookingRecord({
         userId: req.auth!.id,
-        pickupLocation,
-        pickupLat: Number(pickupLat),
-        pickupLng: Number(pickupLng),
-        dropoffLocation,
-        dropoffLat: Number(dropoffLat),
-        dropoffLng: Number(dropoffLng),
-        vehicleType,
-        estimatedDistance: distanceKm,
-        estimatedDuration: durationMin,
-        estimatedCost: fare.total,
-        status: "PENDING",
-        scheduledTime: scheduledTime ? new Date(scheduledTime) : null,
-        stops: Array.isArray(stops)
-          ? {
-              create: [
-                {
-                  orderIndex: 0,
-                  location: pickupLocation,
-                  lat: Number(pickupLat),
-                  lng: Number(pickupLng),
-                  stopType: "PICKUP",
-                },
-                ...stops.map((s: any, i: number) => ({
-                  orderIndex: i + 1,
-                  location: s.location,
-                  lat: Number(s.lat),
-                  lng: Number(s.lng),
-                  stopType: "WAYPOINT",
-                })),
-                {
-                  orderIndex: stops.length + 1,
-                  location: dropoffLocation,
-                  lat: Number(dropoffLat),
-                  lng: Number(dropoffLng),
-                  stopType: "DROP",
-                },
-              ],
-            }
-          : undefined,
-      },
-      include: bookingInclude,
-    });
-
-    let finalBooking = booking;
-    if (couponCode) {
-      try {
-        await applyCouponToBooking(booking.id, couponCode, req.auth!.id);
-        finalBooking = await prisma.booking.findUniqueOrThrow({
-          where: { id: booking.id },
-          include: bookingInclude,
-        });
-      } catch (err: any) {
-        await prisma.booking.delete({ where: { id: booking.id } });
+        ...parsed,
+      });
+      return res.status(201).json({ message: "Booking created", booking });
+    } catch (err: any) {
+      if (parsed.couponCode) {
         return res.status(400).json({ message: err.message });
       }
+      throw err;
     }
+  } catch (err: any) {
+    return res.status(500).json({ message: "Internal error", error: err.message });
+  }
+};
 
-    offerBookingToDrivers(finalBooking.id).catch(() => undefined);
-    bookingsCreatedTotal.inc();
+export const createGuestBooking = async (req: Request, res: Response) => {
+  try {
+    const { name, phoneNumber, email } = req.body;
+    if (!name?.trim() || !phoneNumber?.trim())
+      return res.status(400).json({ message: "Name and phone number are required" });
 
-    return res.status(201).json({ message: "Booking created", booking: finalBooking });
+    const parsed = parseBookingBody(req.body);
+    if ("error" in parsed) return res.status(400).json({ message: parsed.error });
+
+    const { user, isNewUser } = await findOrCreateGuestUser({
+      name: String(name),
+      phoneNumber: String(phoneNumber),
+      email: email ? String(email) : undefined,
+    });
+
+    try {
+      const booking = await createBookingRecord({
+        userId: user.id,
+        ...parsed,
+      });
+
+      const { accessToken, refreshToken } = await createSession({
+        id: user.id,
+        role: "USER",
+      });
+
+      return res.status(201).json({
+        message: isNewUser
+          ? "Booking created. Log in with your phone to manage bookings later."
+          : "Booking created",
+        booking,
+        token: accessToken,
+        refreshToken,
+        user: sanitizeUser(user),
+        role: "USER",
+        isNewUser,
+      });
+    } catch (err: any) {
+      return res.status(400).json({ message: err.message });
+    }
+  } catch (err: any) {
+    return res.status(500).json({ message: "Internal error", error: err.message });
+  }
+};
+
+export const trackGuestBooking = async (req: Request, res: Response) => {
+  try {
+    const bookingId = String(req.query.bookingId || "");
+    const phoneNumber = normalizePhone(String(req.query.phoneNumber || ""));
+
+    if (!bookingId || !phoneNumber)
+      return res.status(400).json({ message: "bookingId and phoneNumber are required" });
+
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: bookingInclude,
+    });
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+
+    const user = await prisma.user.findUnique({ where: { id: booking.userId } });
+    if (!user || normalizePhone(user.phoneNumber) !== phoneNumber)
+      return res.status(403).json({ message: "Phone number does not match this booking" });
+
+    return res.status(200).json({ booking });
   } catch (err: any) {
     return res.status(500).json({ message: "Internal error", error: err.message });
   }
@@ -200,6 +204,7 @@ export const cancelBooking = async (req: AuthRequest, res: Response) => {
     });
 
     if (booking.driverId) {
+      const { notify } = await import("../services/notifications");
       await notify({
         type: "BOOKING_CANCELLED",
         message: `Booking ${booking.id} was cancelled by the customer.`,
@@ -207,6 +212,7 @@ export const cancelBooking = async (req: AuthRequest, res: Response) => {
         bookingId: booking.id,
       });
     }
+    const { emitToBooking } = await import("../services/realtime");
     emitToBooking(booking.id, "booking:update", updated);
 
     return res.status(200).json({

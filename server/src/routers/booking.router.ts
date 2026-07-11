@@ -1,6 +1,8 @@
 import { Router } from "express";
 import {
   createBooking,
+  createGuestBooking,
+  trackGuestBooking,
   listMyBookings,
   getBooking,
   cancelBooking,
@@ -9,8 +11,12 @@ import {
 import { listMessages } from "../controllers/chat.controller";
 import { getInvoice } from "../controllers/invoice.controller";
 import { requireAuth, requireRole } from "../middlewares/auth";
+import { guestBookingRateLimit } from "../middlewares/rateLimit";
 
 const router = Router();
+
+router.post("/guest", guestBookingRateLimit, createGuestBooking);
+router.get("/guest/track", guestBookingRateLimit, trackGuestBooking);
 
 router.use(requireAuth);
 

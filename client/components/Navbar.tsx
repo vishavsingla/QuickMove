@@ -38,7 +38,9 @@ export function Navbar() {
           ]
         : role === "ADMIN"
           ? [{ href: "/admin", label: "Admin" }]
-          : [];
+          : !user
+            ? [{ href: "/book", label: "Book a move" }]
+            : [];
 
   const onLogout = () => {
     logout();
@@ -71,7 +73,7 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-1 sm:gap-2">
-          {user && links.length > 0 && (
+          {links.length > 0 && (
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
               <SheetTrigger asChild>
                 <Button

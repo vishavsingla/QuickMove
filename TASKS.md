@@ -34,6 +34,7 @@ Last updated: 2026-07-12
 - [x] Render trust proxy (`TRUST_PROXY=1`) for rate limiting behind load balancer
 - [x] Mobile nav sheet menu + responsive padding on book/tracking pages
 - [x] README deployed-stack quick reference
+- [x] Guest-first booking flow (Uber-style): public `/book`, phone at confirm, `POST /api/bookings/guest`, phone-based tracking
 
 ## In progress
 - _(none)_
@@ -56,7 +57,7 @@ Last updated: 2026-07-12
 
 ## Stop conditions
 - [x] No placeholders / dummy UI (functional dashboards; KYC/push use intentional stubs)
-- [x] All tests green in CI (83 backend + 18 RTL + 7 e2e)
+- [x] All tests green in CI (104 backend + 18 RTL + 7 e2e)
 - [x] k8s manifests ready (`deploy/k8s/`)
 - [x] Deep docs complete (HLD, LLD, API, RUNBOOK)
 - [x] Security review passed (helmet headers, RBAC, no hash leak tests)

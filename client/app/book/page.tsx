@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowRight, Clock, Route, Plus, X } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
-import { RequireRole } from "@/components/RequireRole";
+import { useAuth } from "@/context/AuthProvider";
 import { AddressSearch } from "@/components/AddressSearch";
+import { GuestCheckoutDialog } from "@/components/GuestCheckoutDialog";
 import { LiveMap, MapMarker } from "@/components/LiveMap";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,8 +19,9 @@ import { cn } from "@/lib/utils";
 
 type MapTarget = "pickup" | "dropoff" | { stop: number };
 
-function BookInner() {
+export default function BookPage() {
   const router = useRouter();
+  const { user, setSession } = useAuth();
   const { toast } = useToast();
   const [pickup, setPickup] = useState<PlaceResult | null>(null);
   const [stops, setStops] = useState<PlaceResult[]>([]);
@@ -36,6 +38,7 @@ function BookInner() {
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [scheduleForLater, setScheduleForLater] = useState(false);
   const [scheduledAt, setScheduledAt] = useState("");
+  const [guestDialogOpen, setGuestDialogOpen] = useState(false);
 
   const routePoints = useMemo(
     () => [pickup, ...stops, dropoff].filter(Boolean) as PlaceResult[],
@@ -46,8 +49,9 @@ function BookInner() {
     !!p && Number.isFinite(p.lat) && Number.isFinite(p.lng) && (p.lat !== 0 || p.lng !== 0);
 
   useEffect(() => {
+    if (!user) return;
     api.listAddresses().then((r) => setSavedAddresses(r.addresses)).catch(() => undefined);
-  }, []);
+  }, [user]);
 
   const applySavedAddress = (addr: SavedAddress, target: "pickup" | "dropoff") => {
     const place: PlaceResult = {
@@ -165,7 +169,7 @@ function BookInner() {
       : 0;
 
   const applyCoupon = async () => {
-    if (!selectedQuote || !couponInput.trim()) return;
+    if (!selectedQuote || !couponInput.trim() || !user) return;
     try {
       const r = await api.validateCoupon(couponInput.trim(), selectedQuote.fare.total);
       if (r.valid && r.discount != null) {
@@ -197,37 +201,59 @@ function BookInner() {
     setStops((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const book = async () => {
-    if (!hasValidCoords(pickup) || !hasValidCoords(dropoff)) return;
+  const buildBookingPayload = () => {
     const validStops = stops.filter((s) => s.displayName && hasValidCoords(s));
+    return {
+      pickupLocation: pickup!.displayName,
+      pickupLat: pickup!.lat,
+      pickupLng: pickup!.lng,
+      dropoffLocation: dropoff!.displayName,
+      dropoffLat: dropoff!.lat,
+      dropoffLng: dropoff!.lng,
+      vehicleType: vehicle,
+      ...(user && couponDiscount > 0 && couponInput.trim()
+        ? { couponCode: couponInput.trim().toUpperCase() }
+        : {}),
+      ...(validStops.length
+        ? {
+            stops: validStops.map((s) => ({
+              location: s.displayName,
+              lat: s.lat,
+              lng: s.lng,
+            })),
+          }
+        : {}),
+      ...(scheduleForLater && scheduledAt
+        ? { scheduledTime: new Date(scheduledAt).toISOString() }
+        : {}),
+    };
+  };
+
+  const submitBooking = async (guest?: { name: string; phoneNumber: string; email?: string }) => {
+    if (!hasValidCoords(pickup) || !hasValidCoords(dropoff)) return;
     setBooking(true);
     try {
-      const res = await api.createBooking({
-        pickupLocation: pickup!.displayName,
-        pickupLat: pickup!.lat,
-        pickupLng: pickup!.lng,
-        dropoffLocation: dropoff!.displayName,
-        dropoffLat: dropoff!.lat,
-        dropoffLng: dropoff!.lng,
-        vehicleType: vehicle,
-        ...(couponDiscount > 0 && couponInput.trim()
-          ? { couponCode: couponInput.trim().toUpperCase() }
-          : {}),
-        ...(validStops.length
-          ? {
-              stops: validStops.map((s) => ({
-                location: s.displayName,
-                lat: s.lat,
-                lng: s.lng,
-              })),
-            }
-          : {}),
-        ...(scheduleForLater && scheduledAt
-          ? { scheduledTime: new Date(scheduledAt).toISOString() }
-          : {}),
-      });
-      toast({ title: "Booking created", description: "Finding you a driver…" });
-      router.push(`/bookings/${res.booking.id}`);
+      const payload = buildBookingPayload();
+      if (user) {
+        const res = await api.createBooking(payload);
+        toast({ title: "Booking created", description: "Finding you a driver…" });
+        router.push(`/bookings/${res.booking.id}`);
+      } else if (guest) {
+        const res = await api.createGuestBooking({ ...payload, ...guest });
+        setSession({
+          token: res.token,
+          refreshToken: res.refreshToken,
+          user: res.user,
+          role: res.role as "USER",
+        });
+        toast({
+          title: "Booking confirmed",
+          description: res.isNewUser
+            ? "Track your move live. Set a password later to save your history."
+            : "Finding you a driver…",
+        });
+        router.push(`/bookings/${res.booking.id}`);
+      }
     } catch (err) {
       toast({
         title: "Booking failed",
@@ -236,6 +262,16 @@ function BookInner() {
       });
     } finally {
       setBooking(false);
+      setGuestDialogOpen(false);
+    }
+  };
+
+  const handleBookClick = () => {
+    if (!hasValidCoords(pickup) || !hasValidCoords(dropoff)) return;
+    if (user) {
+      void submitBooking();
+    } else {
+      setGuestDialogOpen(true);
     }
   };
 
@@ -254,7 +290,7 @@ function BookInner() {
             <CardTitle>Plan your move</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {savedAddresses.length > 0 && (
+            {user && savedAddresses.length > 0 && (
               <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground">Saved addresses</p>
                 <div className="flex flex-wrap gap-2">
@@ -430,28 +466,36 @@ function BookInner() {
                 </div>
               )}
 
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Coupon code"
-                  value={couponInput}
-                  onChange={(e) => {
-                    setCouponInput(e.target.value);
-                    setCouponDiscount(0);
-                  }}
-                />
-                <Button type="button" variant="outline" onClick={applyCoupon} disabled={!couponInput.trim()}>
-                  Apply
-                </Button>
-              </div>
+              {user && (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Coupon code"
+                    value={couponInput}
+                    onChange={(e) => {
+                      setCouponInput(e.target.value);
+                      setCouponDiscount(0);
+                    }}
+                  />
+                  <Button type="button" variant="outline" onClick={applyCoupon} disabled={!couponInput.trim()}>
+                    Apply
+                  </Button>
+                </div>
+              )}
 
-              <Button className="w-full" size="lg" onClick={book} disabled={booking}>
+              <Button className="w-full" size="lg" onClick={handleBookClick} disabled={booking}>
                 {booking ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <ArrowRight className="mr-2 h-4 w-4" />
                 )}
-                Book {VEHICLE_META[vehicle].label} · {selectedQuote ? currency(payable) : ""}
+                {user ? "Book" : "Continue"} {VEHICLE_META[vehicle].label} · {selectedQuote ? currency(payable) : ""}
               </Button>
+
+              {!user && (
+                <p className="text-center text-xs text-muted-foreground">
+                  No account needed — add your phone at checkout
+                </p>
+              )}
             </CardContent>
           </Card>
         )}
@@ -479,14 +523,15 @@ function BookInner() {
           mapClickEnabled
         />
       </div>
-    </div>
-  );
-}
 
-export default function BookPage() {
-  return (
-    <RequireRole role="USER">
-      <BookInner />
-    </RequireRole>
+      <GuestCheckoutDialog
+        open={guestDialogOpen}
+        onOpenChange={setGuestDialogOpen}
+        onConfirm={(details) => submitBooking(details)}
+        loading={booking}
+        vehicleLabel={VEHICLE_META[vehicle].label}
+        fareLabel={selectedQuote ? currency(payable) : undefined}
+      />
+    </div>
   );
 }
