@@ -1,7 +1,7 @@
 import { Response } from "express";
 import { prisma } from "../lib/prisma";
 import { AuthRequest } from "../middlewares/auth";
-import { ensureInvoice, renderInvoiceHtml } from "../services/invoices";
+import { ensureInvoice, renderInvoiceHtml, renderInvoicePdf } from "../services/invoices";
 
 const canAccess = async (bookingId: string, auth: AuthRequest["auth"]) => {
   const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
@@ -25,6 +25,16 @@ export const getInvoice = async (req: AuthRequest, res: Response) => {
     if (format === "html") {
       res.setHeader("Content-Type", "text/html; charset=utf-8");
       return res.status(200).send(html);
+    }
+
+    if (format === "pdf") {
+      const pdf = await renderInvoicePdf(invoice as any);
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${invoice.invoiceNumber}.pdf"`
+      );
+      return res.status(200).send(pdf);
     }
 
     return res.status(200).json({

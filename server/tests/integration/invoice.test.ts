@@ -49,6 +49,42 @@ describe("invoices", () => {
     expect(res.body.html).toContain("QuickMove Tax Invoice");
   });
 
+  it("returns PDF when format=pdf", async () => {
+    const reg = await request(app).post("/api/auth/register/user").send({
+      name: "PDF User",
+      email: `pdf-${Date.now()}@test.dev`,
+      phoneNumber: `+93${Date.now()}`,
+      password: "secret123",
+    });
+    const token = reg.body.token as string;
+
+    const booking = await prisma.booking.create({
+      data: {
+        userId: reg.body.user.id,
+        pickupLocation: "A",
+        pickupLat: 12.97,
+        pickupLng: 77.59,
+        dropoffLocation: "B",
+        dropoffLat: 12.93,
+        dropoffLng: 77.62,
+        vehicleType: "CAR",
+        estimatedCost: 200,
+        estimatedDistance: 4,
+        estimatedDuration: 12,
+        status: "COMPLETED",
+        paymentStatus: "PAID",
+        paymentMethod: "wallet",
+      },
+    });
+
+    const res = await request(app)
+      .get(`/api/bookings/${booking.id}/invoice?format=pdf`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toMatch(/application\/pdf/);
+    expect(res.body.slice(0, 4).toString()).toBe("%PDF");
+  });
+
   it("rejects invoice for unpaid booking", async () => {
     const reg = await request(app).post("/api/auth/register/user").send({
       name: "Unpaid",

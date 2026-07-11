@@ -46,6 +46,7 @@ function TrackInner({ id }: { id: string }) {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
 
   const load = useCallback(() => {
     api
@@ -140,17 +141,20 @@ function TrackInner({ id }: { id: string }) {
   };
 
   const downloadInvoice = async () => {
+    setInvoiceLoading(true);
     try {
-      const { invoice, html } = await api.getInvoice(id);
-      const blob = new Blob([html], { type: "text/html" });
+      const { blob, filename } = await api.downloadInvoicePdf(id);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${invoice.invoiceNumber}.html`;
+      a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
+      toast({ title: "Invoice downloaded" });
     } catch {
       toast({ title: "Could not download invoice", variant: "destructive" });
+    } finally {
+      setInvoiceLoading(false);
     }
   };
 
@@ -167,7 +171,7 @@ function TrackInner({ id }: { id: string }) {
   const canCancel = !["COMPLETED", "CANCELLED", "REJECTED"].includes(booking.status);
 
   return (
-    <div className="container grid gap-6 py-8 lg:grid-cols-[1fr_minmax(0,380px)]">
+    <div className="container grid gap-6 px-4 py-6 sm:py-8 lg:grid-cols-[1fr_minmax(0,380px)]">
       <div className="order-2 min-h-[400px] overflow-hidden rounded-xl border lg:order-1">
         <LiveMap markers={markers} showRoute className="h-full" />
       </div>
@@ -266,8 +270,18 @@ function TrackInner({ id }: { id: string }) {
             {booking.status === "COMPLETED" && booking.paymentStatus === "PAID" && (
               <div className="space-y-2">
                 <p className="text-center text-sm text-emerald-600">Payment complete ✓</p>
-                <Button variant="outline" className="w-full" onClick={downloadInvoice}>
-                  <Download className="mr-2 h-4 w-4" /> Download invoice
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={downloadInvoice}
+                  disabled={invoiceLoading}
+                >
+                  {invoiceLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="mr-2 h-4 w-4" />
+                  )}
+                  Download invoice (PDF)
                 </Button>
               </div>
             )}

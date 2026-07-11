@@ -136,6 +136,43 @@ async function request<T>(
   return data as T;
 }
 
+/** Authenticated binary download (e.g. invoice PDF). */
+async function downloadBlob(
+  path: string,
+  retry = true
+): Promise<{ blob: Blob; filename: string }> {
+  const token = tokenStore.get();
+  const res = await fetch(`${API_URL}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  if (
+    res.status === 401 &&
+    retry &&
+    shouldAttemptRefresh(path) &&
+    tokenStore.getRefresh()
+  ) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) return downloadBlob(path, false);
+  }
+
+  if (!res.ok) {
+    const text = await res.text();
+    let message = "Download failed";
+    try {
+      message = JSON.parse(text).message || message;
+    } catch {
+      /* non-JSON error body */
+    }
+    throw new ApiError(message, res.status);
+  }
+
+  const disposition = res.headers.get("Content-Disposition") || "";
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match?.[1] || "download";
+  return { blob: await res.blob(), filename };
+}
+
 export const api = {
   // auth
   loginUser: (email: string, password: string) =>
@@ -215,6 +252,8 @@ export const api = {
     request<{ messages: import("./types").ChatMessage[] }>(`/api/bookings/${id}/chat`),
   getInvoice: (id: string) =>
     request<{ invoice: any; html: string }>(`/api/bookings/${id}/invoice`),
+  downloadInvoicePdf: (id: string) =>
+    downloadBlob(`/api/bookings/${id}/invoice?format=pdf`),
 
   // driver
   driverProfile: () => request<{ driver: Driver }>("/api/driver/profile"),

@@ -47,7 +47,7 @@ Nominatim/Photon are free under OSM usage policies (cache results, identify your
 | POST | `/` | `{ pickupLocation, pickupLat, pickupLng, dropoffLocation, dropoffLat, dropoffLng, vehicleType, scheduledTime?, stops?: [{ location, lat, lng }] }` | Fare recomputed server-side; creates `BookingStop` rows when `stops` set |
 | GET | `/` | – | Customer's bookings (newest first) |
 | GET | `/:id` | – | Booking with `stops[]` (owner, assigned driver, or admin only) |
-| GET | `/:id/invoice` | – | Tax invoice JSON + HTML (`?format=html` for raw HTML) |
+| GET | `/:id/invoice` | – | Tax invoice JSON + HTML (`?format=html` or `?format=pdf`) |
 | POST | `/:id/cancel` | `{ reason? }` | Allowed unless COMPLETED/CANCELLED; refunds paid fares to wallet |
 | POST | `/:id/rate` | `{ rating: 1..5 }` | Only on COMPLETED; updates driver rating |
 
