@@ -14,7 +14,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import ToggleTheme from "@/app/components/ToggleTheme";
 import { NotificationBell } from "./NotificationBell";
 
 export function Navbar() {
@@ -110,7 +109,6 @@ export function Navbar() {
             </Sheet>
           )}
           {user && <NotificationBell />}
-          <ToggleTheme />
           {user ? (
             <div className="flex items-center gap-2">
               <span className="hidden text-sm text-muted-foreground sm:inline">
