@@ -139,10 +139,25 @@ describe("verification & oauth", () => {
     expect(res.body.user.emailVerified).toBe(true);
   });
 
+  it("phone OTP login creates user and returns tokens", async () => {
+    const send = await request(app)
+      .post("/api/auth/otp/send")
+      .send({ phoneNumber: "+919988776655" });
+    expect(send.status).toBe(200);
+    expect(send.body.debugOtp).toMatch(/^\d{6}$/);
+
+    const verify = await request(app)
+      .post("/api/auth/otp/verify")
+      .send({ phoneNumber: "+919988776655", code: send.body.debugOtp });
+    expect(verify.status).toBe(200);
+    expect(verify.body.token).toBeTruthy();
+    expect(verify.body.user.phoneVerified).toBe(true);
+  });
+
   it("sends public phone OTP for guest flow", async () => {
     const send = await request(app)
-      .post("/api/auth/send-otp")
-      .send({ phoneNumber: "+919876543210" });
+      .post("/api/auth/otp/send")
+      .send({ phoneNumber: "+919876543210", purpose: "guest" });
     expect(send.status).toBe(200);
     expect(send.body.debugOtp).toBeTruthy();
   });

@@ -218,7 +218,26 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ channel, target, code }),
     }),
-  googleOAuthUrl: () => `${API_URL}/api/auth/oauth/google`,
+  googleOAuthUrl: () => `${API_URL}/api/auth/google`,
+  sendGuestOtp: (phoneNumber: string) =>
+    request<{ message: string; debugOtp?: string }>("/api/auth/send-otp", {
+      method: "POST",
+      body: JSON.stringify({ phoneNumber, purpose: "guest" }),
+    }),
+  verifyGuestOtp: (phoneNumber: string, code: string) =>
+    request<{ phoneVerificationToken: string }>("/api/auth/verify-otp", {
+      method: "POST",
+      body: JSON.stringify({ phoneNumber, code, purpose: "guest" }),
+    }),
+  resendVerification: () =>
+    request<{ message: string; debugToken?: string }>("/api/auth/resend-verification", {
+      method: "POST",
+      body: JSON.stringify({}),
+    }),
+  verifyEmail: (token: string) =>
+    request<{ message: string; user: User }>(
+      `/api/auth/verify-email?token=${encodeURIComponent(token)}`
+    ),
 
   // geo
   searchPlaces: (q: string) =>

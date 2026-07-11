@@ -25,6 +25,7 @@ function ProfileInner() {
   const [newLabel, setNewLabel] = useState("Home");
   const [newPlace, setNewPlace] = useState<PlaceResult | null>(null);
   const [saving, setSaving] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const load = async () => {
     const [p, a] = await Promise.all([api.getProfile(), api.listAddresses()]);
@@ -37,6 +38,25 @@ function ProfileInner() {
   useEffect(() => {
     load();
   }, []);
+
+  const resendEmail = async () => {
+    setResending(true);
+    try {
+      const r = await api.resendVerification();
+      toast({
+        title: r.message,
+        description: r.debugToken ? `Dev link token in server logs / debugToken` : undefined,
+      });
+    } catch (err) {
+      toast({
+        title: "Could not resend",
+        description: err instanceof ApiError ? err.message : "",
+        variant: "destructive",
+      });
+    } finally {
+      setResending(false);
+    }
+  };
 
   const saveProfile = async () => {
     setSaving(true);
@@ -88,6 +108,26 @@ function ProfileInner() {
   return (
     <div className="container max-w-2xl space-y-6 py-8">
       <h1 className="text-2xl font-bold">Profile</h1>
+
+      {!profile.emailVerified && !profile.email?.endsWith("@quickmove.local") && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm dark:border-amber-900 dark:bg-amber-950/30">
+          <p className="font-medium">Verify your email</p>
+          <p className="mt-1 text-muted-foreground">
+            We sent a link to <strong>{profile.email}</strong>. Check server logs in dev for the
+            link, or resend below.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-3"
+            disabled={resending}
+            onClick={resendEmail}
+          >
+            {resending && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+            Resend verification email
+          </Button>
+        </div>
+      )}
 
       <Card>
         <CardHeader>

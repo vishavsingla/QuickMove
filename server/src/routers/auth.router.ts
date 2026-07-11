@@ -37,8 +37,8 @@ const otpVerify = [otpRateLimit, optionalAuth, verifyOtpHandler] as const;
 
 router.post("/send-otp", ...otpSend);
 router.post("/verify-otp", ...otpVerify);
-router.post("/otp/send", requireAuth, otpRateLimit, sendOtpHandler);
-router.post("/otp/verify", requireAuth, otpRateLimit, verifyOtpHandler);
+router.post("/otp/send", otpRateLimit, optionalAuth, sendOtpHandler);
+router.post("/otp/verify", otpRateLimit, optionalAuth, verifyOtpHandler);
 
 router.post("/verify-email", verifyEmailHandler);
 router.get("/verify-email", verifyEmailHandler);
