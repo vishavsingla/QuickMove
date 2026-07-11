@@ -41,6 +41,26 @@ docker compose up --build
 # API: http://localhost:5001  |  Web: http://localhost:3000
 ```
 
+## Deployed stack (production)
+
+After following [Free cloud deployment](docs/DEPLOYMENT_FREE.md):
+
+| Service | Typical URL | Env var |
+|---------|-------------|---------|
+| Web (Vercel) | `https://your-app.vercel.app` | `NEXT_PUBLIC_API_URL` → API URL |
+| API (Render) | `https://quickmove-api.onrender.com` | `CLIENT_ORIGIN` + `CORS_ORIGINS` → web URL(s) |
+| Postgres (Neon) | pooled + direct URLs | `DATABASE_URL`, `DIRECT_URL` |
+| Redis (Upstash, optional) | `rediss://…` | `REDIS_URL` |
+
+**Smoke test after deploy:**
+
+```bash
+curl -s https://quickmove-api.onrender.com/health
+# → {"status":"ok","service":"quickmove"}
+```
+
+Log in with seeded demo accounts (run `npm run seed` against Neon once). Set `TRUST_PROXY=1` on Render so rate limiting works behind the load balancer.
+
 ## Tests
 
 ```bash
