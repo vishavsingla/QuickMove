@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" fill="none">
+  <rect width="180" height="180" rx="36" fill="#18181b"/>
+  <path
+    d="M38 118h74v-42H38v42zm74 0h16l10-18V88H112v30zm-10 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0zm-52 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
+    stroke="#fafafa"
+    stroke-width="9"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M62 76V62h34v14"
+    stroke="#fafafa"
+    stroke-width="9"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <text
+    x="90"
+    y="158"
+    text-anchor="middle"
+    fill="#fafafa"
+    font-family="system-ui, -apple-system, sans-serif"
+    font-size="22"
+    font-weight="700"
+    letter-spacing="1"
+  >QM</text>
+</svg>

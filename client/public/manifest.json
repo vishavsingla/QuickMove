@@ -1,0 +1,23 @@
+{
+  "name": "QuickMove",
+  "short_name": "QuickMove",
+  "description": "Real-time logistics and moving platform with live tracking, instant fare estimates and nearby drivers.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#18181b",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
