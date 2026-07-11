@@ -1,0 +1,4 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "echo 'QuickMove frontend is in client/. Set Vercel Root Directory to client and use the quickmove project (not quick-move).' && exit 1"
+}
