@@ -20,17 +20,23 @@ function EarningsInner() {
   const [ifscCode, setIfscCode] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawing, setWithdrawing] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(async () => {
-    const [e, p, profile] = await Promise.all([
-      api.driverEarnings(),
-      api.driverPayouts().catch(() => ({ payouts: [] })),
-      api.driverProfile(),
-    ]);
-    setData(e);
-    setPayouts(p.payouts);
-    if (profile.driver.bankAccNo) setBankAccNo(profile.driver.bankAccNo);
-    if (profile.driver.ifscCode) setIfscCode(profile.driver.ifscCode);
+    setLoadError(false);
+    try {
+      const [e, p, profile] = await Promise.all([
+        api.driverEarnings(),
+        api.driverPayouts().catch(() => ({ payouts: [] })),
+        api.driverProfile(),
+      ]);
+      setData(e);
+      setPayouts(p.payouts);
+      if (profile.driver.bankAccNo) setBankAccNo(profile.driver.bankAccNo);
+      if (profile.driver.ifscCode) setIfscCode(profile.driver.ifscCode);
+    } catch {
+      setLoadError(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -64,6 +70,16 @@ function EarningsInner() {
       setWithdrawing(false);
     }
   };
+
+  if (loadError)
+    return (
+      <div className="container flex min-h-[60vh] flex-col items-center justify-center gap-4 py-8">
+        <p className="text-muted-foreground">Could not load earnings.</p>
+        <Button variant="outline" onClick={() => load()}>
+          Retry
+        </Button>
+      </div>
+    );
 
   if (!data)
     return (

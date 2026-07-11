@@ -247,7 +247,7 @@ function BookInner() {
         : `stop ${mapTarget.stop + 1}`;
 
   return (
-    <div className="container grid gap-6 py-8 lg:grid-cols-[minmax(0,420px)_1fr]">
+    <div className="container grid gap-6 px-4 py-6 sm:py-8 lg:grid-cols-[minmax(0,420px)_1fr]">
       <div className="space-y-6">
         <Card>
           <CardHeader>
