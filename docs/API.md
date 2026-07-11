@@ -20,17 +20,17 @@ cookie).
 | POST | `/refresh` | – | `{ refreshToken }` | → `{ token, refreshToken, role, driverId? }` — rotates refresh token |
 | POST | `/logout` | – | `{ refreshToken? }` | Revokes session |
 | GET | `/me` | any | – | → `{ user, role }` |
-| GET | `/config` | – | – | → `{ googleOAuth: { enabled, url }, otp: { debug } }` |
-| POST | `/otp/send` | any | `{ channel: 'phone'\|'email', target }` | 6-digit OTP, 10min expiry; `debugOtp` when `NODE_ENV!=production` or `OTP_DEBUG=true` |
-| POST | `/otp/verify` | any | `{ channel, target, code }` | Marks `phoneVerified` / `emailVerified`; emits notification |
-| GET | `/oauth/google` | – | – | Redirects to Google when configured; `503` stub message otherwise |
-| GET | `/oauth/google/callback` | – | query `code` | Links account by email or creates user; redirects to client `/auth/callback` |
+| GET | `/config` | – | – | → `{ googleOAuth: { enabled, mode, url }, otp: { stubExpose } }` |
+| POST | `/otp/send` | optional | `{ phoneNumber }` or `{ channel, target }` | Phone login (5min) or profile verify; `debugOtp` when `OTP_STUB_EXPOSE=true` |
+| POST | `/otp/verify` | optional | `{ phoneNumber, code }` or `{ channel, target, code }` | Login returns tokens; profile marks verified |
+| POST | `/email/send-verification` | any | – | Stub email link logged to console in dev |
+| GET | `/email/verify?token=` | – | – | Marks `emailVerified` |
+| GET | `/google` | – | – | Real Google if keys set; else mock redirect |
+| GET | `/google/callback` | – | `code` or `mock=1` | Redirects to `/auth/callback` with tokens |
 
-**OTP rate limit:** 3 sends per 15 minutes per target (plus IP ceiling). Delivery uses console stub (no Twilio/SendGrid required).
+**OTP stub:** `OTP_STUB_EXPOSE=true` (auto in non-production) returns OTP in API responses. No Twilio/Resend required for demos.
 
-**Google OAuth env:** `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, optional `GOOGLE_OAUTH_REDIRECT_URI`.
-
-**OTP debug env:** `OTP_DEBUG=true` returns `debugOtp` in send response (also enabled when `NODE_ENV!=production`).
+**Google OAuth:** set `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` for real OAuth; otherwise mock mode is enabled.
 
 Verification is **optional** — guest booking, login, and core flows never require it.
 

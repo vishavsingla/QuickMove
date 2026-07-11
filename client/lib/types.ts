@@ -28,8 +28,8 @@ export interface User {
 }
 
 export interface AuthConfig {
-  googleOAuth: { enabled: boolean; url: string | null };
-  otp: { debug: boolean };
+  googleOAuth: { enabled: boolean; mode?: "google" | "mock"; url: string | null };
+  otp: { debug: boolean; stubExpose?: boolean };
 }
 
 export interface AuthResult {

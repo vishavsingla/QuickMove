@@ -219,24 +219,35 @@ export const api = {
       body: JSON.stringify({ channel, target, code }),
     }),
   googleOAuthUrl: () => `${API_URL}/api/auth/google`,
+  sendPhoneLoginOtp: (phoneNumber: string) =>
+    request<{ message: string; debugOtp?: string; otp?: string }>(
+      "/api/auth/otp/send",
+      { method: "POST", body: JSON.stringify({ phoneNumber }) }
+    ),
+  verifyPhoneLoginOtp: (phoneNumber: string, code: string) =>
+    request<AuthResult>("/api/auth/otp/verify", {
+      method: "POST",
+      body: JSON.stringify({ phoneNumber, code }),
+    }),
   sendGuestOtp: (phoneNumber: string) =>
-    request<{ message: string; debugOtp?: string }>("/api/auth/send-otp", {
+    request<{ message: string; debugOtp?: string }>("/api/auth/otp/send", {
       method: "POST",
       body: JSON.stringify({ phoneNumber, purpose: "guest" }),
     }),
   verifyGuestOtp: (phoneNumber: string, code: string) =>
-    request<{ phoneVerificationToken: string }>("/api/auth/verify-otp", {
+    request<{ phoneVerificationToken: string }>("/api/auth/otp/verify", {
       method: "POST",
       body: JSON.stringify({ phoneNumber, code, purpose: "guest" }),
     }),
-  resendVerification: () =>
-    request<{ message: string; debugToken?: string }>("/api/auth/resend-verification", {
-      method: "POST",
-      body: JSON.stringify({}),
-    }),
+  sendEmailVerification: () =>
+    request<{ message: string; debugToken?: string; verifyUrl?: string }>(
+      "/api/auth/email/send-verification",
+      { method: "POST", body: JSON.stringify({}) }
+    ),
+  resendVerification: () => api.sendEmailVerification(),
   verifyEmail: (token: string) =>
     request<{ message: string; user: User }>(
-      `/api/auth/verify-email?token=${encodeURIComponent(token)}`
+      `/api/auth/email/verify?token=${encodeURIComponent(token)}`
     ),
 
   // geo
