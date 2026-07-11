@@ -2,7 +2,7 @@ import { Response } from "express";
 import { BookingStatus } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { AuthRequest } from "../middlewares/auth";
-import { notify } from "../services/notifications";
+import { notify, notifyBookingStatusChange } from "../services/notifications";
 import { emitToBooking, emitToUser } from "../services/realtime";
 import { ensureWallet, requestDriverWithdrawal } from "../services/payments";
 
@@ -102,11 +102,12 @@ export const acceptBooking = async (req: AuthRequest, res: Response) => {
     include: bookingInclude,
   });
 
-  await notify({
+  await notifyBookingStatusChange({
     type: "BOOKING_ACCEPTED",
     message: "A driver accepted your booking and is on the way.",
     userId: booking!.userId,
     bookingId: booking!.id,
+    status: "ACCEPTED",
   });
   emitToUser(booking!.userId, "booking:update", booking);
   emitToBooking(booking!.id, "booking:update", booking);
@@ -164,11 +165,12 @@ export const updateJobStatus = async (req: AuthRequest, res: Response) => {
     });
   }
 
-  await notify({
+  await notifyBookingStatusChange({
     type: "RIDE_UPDATE",
     message: STATUS_MESSAGE[status] ?? `Status: ${status}`,
     userId: booking.userId,
     bookingId: booking.id,
+    status,
   });
   emitToUser(booking.userId, "booking:update", updated);
   emitToBooking(booking.id, "booking:update", updated);

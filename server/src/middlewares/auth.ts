@@ -34,6 +34,22 @@ export const requireAuth = (
   }
 };
 
+/** Sets req.auth when a valid token is present; continues without auth otherwise. */
+export const optionalAuth = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const token = extractToken(req);
+  if (!token) return next();
+  try {
+    req.auth = verifyAccessToken(token);
+  } catch {
+    /* ignore invalid token for optional routes */
+  }
+  return next();
+};
+
 export const requireRole =
   (...roles: JwtPayload["role"][]) =>
   (req: AuthRequest, res: Response, next: NextFunction) => {

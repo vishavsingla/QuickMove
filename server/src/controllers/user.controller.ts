@@ -51,9 +51,17 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     where: { id: req.auth!.id },
     data: {
       ...(name ? { name } : {}),
-      ...(phoneNumber ? { phoneNumber } : {}),
+      ...(phoneNumber ? { phoneNumber, phoneVerified: false } : {}),
     },
-    select: { id: true, name: true, email: true, phoneNumber: true, role: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phoneNumber: true,
+      phoneVerified: true,
+      emailVerified: true,
+      role: true,
+    },
   });
   return res.status(200).json({ user });
 };
@@ -66,6 +74,8 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
       name: true,
       email: true,
       phoneNumber: true,
+      phoneVerified: true,
+      emailVerified: true,
       role: true,
       createdAt: true,
       _count: { select: { bookings: true, savedAddresses: true } },

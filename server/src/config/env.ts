@@ -25,4 +25,23 @@ export const env = {
   osrmUrl: process.env.OSRM_URL || "https://router.project-osrm.org",
   razorpayKeyId: process.env.RAZORPAY_KEY_ID || "",
   razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || "",
+  googleClientId: process.env.GOOGLE_CLIENT_ID || "",
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+  googleOAuthRedirectUri:
+    process.env.GOOGLE_CALLBACK_URL ||
+    process.env.GOOGLE_OAUTH_REDIRECT_URI ||
+    `http://localhost:${process.env.PORT || 5001}/api/auth/google/callback`,
+  resendApiKey: process.env.RESEND_API_KEY || "",
+  emailFrom: process.env.EMAIL_FROM || "QuickMove <onboarding@resend.dev>",
+  twilioAccountSid: process.env.TWILIO_ACCOUNT_SID || "",
+  twilioAuthToken: process.env.TWILIO_AUTH_TOKEN || "",
+  twilioFromNumber: process.env.TWILIO_FROM_NUMBER || "",
+  otpStubExpose:
+    process.env.OTP_STUB_EXPOSE === "true" ||
+    process.env.OTP_DEBUG === "true" ||
+    process.env.NODE_ENV !== "production",
+  otpDebug:
+    process.env.OTP_STUB_EXPOSE === "true" ||
+    process.env.OTP_DEBUG === "true" ||
+    process.env.NODE_ENV !== "production",
 };

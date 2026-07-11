@@ -207,6 +207,18 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ refreshToken }),
     }),
+  getAuthConfig: () => request<import("./types").AuthConfig>("/api/auth/config"),
+  sendOtp: (channel: "phone" | "email", target: string) =>
+    request<{ message: string; expiresInSec: number; debugOtp?: string }>(
+      "/api/auth/otp/send",
+      { method: "POST", body: JSON.stringify({ channel, target }) }
+    ),
+  verifyOtp: (channel: "phone" | "email", target: string, code: string) =>
+    request<{ message: string; user: User }>("/api/auth/otp/verify", {
+      method: "POST",
+      body: JSON.stringify({ channel, target, code }),
+    }),
+  googleOAuthUrl: () => `${API_URL}/api/auth/oauth/google`,
 
   // geo
   searchPlaces: (q: string) =>

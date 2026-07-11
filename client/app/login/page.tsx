@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -17,7 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import type { Role } from "@/lib/types";
+import type { AuthConfig, Role } from "@/lib/types";
 
 const HOME: Record<Role, string> = {
   USER: "/book",
@@ -32,6 +32,11 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [authConfig, setAuthConfig] = useState<AuthConfig | null>(null);
+
+  useEffect(() => {
+    api.getAuthConfig().then(setAuthConfig).catch(() => undefined);
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +93,30 @@ export default function LoginPage() {
               Log in
             </Button>
           </form>
+
+          {authConfig?.googleOAuth.enabled && (
+            <>
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  window.location.href = api.googleOAuthUrl();
+                }}
+              >
+                Continue with Google
+              </Button>
+            </>
+          )}
+
           <p className="mt-4 text-center text-sm text-muted-foreground">
             New here?{" "}
             <Link href="/signup" className="font-medium text-foreground underline">

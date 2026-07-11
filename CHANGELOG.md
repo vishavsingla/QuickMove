@@ -3,6 +3,15 @@
 ## [Unreleased]
 
 ### Added
+- Optional phone & email verification with OTP (`POST /api/auth/otp/send`, `/verify`)
+- `VerificationOtp` model; `User.phoneVerified`, `User.emailVerified`, `User.googleId`
+- OTP rate limit: 3 sends per 15min per target; console stub delivery (no SMS/email keys)
+- OTP debug mode: `debugOtp` in response when `NODE_ENV!=production` or `OTP_DEBUG=true`
+- Google OAuth: `GET /api/auth/oauth/google` + callback (active when `GOOGLE_CLIENT_ID`/`SECRET` set)
+- `GET /api/auth/config` — exposes OAuth availability for client
+- Profile page: optional verify phone/email sections with badges
+- Login page: "Continue with Google" when OAuth configured
+- Verification success notifications (`VERIFICATION_SUCCESS`)
 - Guest-first booking (Uber-style): browse, estimate, and book without login
 - `POST /api/bookings/guest` — create booking with name + phone; auto-creates or links user by phone
 - `GET /api/bookings/guest/track` — verify phone to view booking without full login

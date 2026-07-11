@@ -35,6 +35,7 @@ Last updated: 2026-07-12
 - [x] Mobile nav sheet menu + responsive padding on book/tracking pages
 - [x] README deployed-stack quick reference
 - [x] Guest-first booking flow (Uber-style): public `/book`, phone at confirm, `POST /api/bookings/guest`, phone-based tracking
+- [x] Optional phone/email OTP verification + Google OAuth (never blocks guest/login flows)
 
 ## In progress
 - _(none)_

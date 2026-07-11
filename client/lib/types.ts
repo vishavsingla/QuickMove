@@ -22,7 +22,14 @@ export interface User {
   name: string | null;
   email: string;
   phoneNumber: string;
+  phoneVerified?: boolean;
+  emailVerified?: boolean;
   role: Role;
+}
+
+export interface AuthConfig {
+  googleOAuth: { enabled: boolean; url: string | null };
+  otp: { debug: boolean };
 }
 
 export interface AuthResult {

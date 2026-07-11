@@ -5,6 +5,7 @@ import { AuthRequest } from "../middlewares/auth";
 import { bookingInclude, createBookingRecord } from "../services/bookingCreate";
 import { findOrCreateGuestUser, normalizePhone } from "../services/guestUser";
 import { createSession } from "../services/sessions";
+import { verifyPhoneVerificationToken } from "../utils/jwt";
 
 const sanitizeUser = (user: { hashedPassword?: string; [key: string]: unknown }) => {
   const clone = { ...user };
@@ -78,9 +79,17 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
 
 export const createGuestBooking = async (req: Request, res: Response) => {
   try {
-    const { name, phoneNumber, email } = req.body;
+    const { name, phoneNumber, email, phoneVerificationToken } = req.body;
     if (!name?.trim() || !phoneNumber?.trim())
       return res.status(400).json({ message: "Name and phone number are required" });
+
+    const normalizedPhone = normalizePhone(String(phoneNumber));
+    if (phoneVerificationToken) {
+      const verified = verifyPhoneVerificationToken(String(phoneVerificationToken));
+      if (!verified || verified.phone !== normalizedPhone) {
+        return res.status(400).json({ message: "Phone verification required or expired" });
+      }
+    }
 
     const parsed = parseBookingBody(req.body);
     if ("error" in parsed) return res.status(400).json({ message: parsed.error });
@@ -90,6 +99,13 @@ export const createGuestBooking = async (req: Request, res: Response) => {
       phoneNumber: String(phoneNumber),
       email: email ? String(email) : undefined,
     });
+
+    if (phoneVerificationToken) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { phoneVerified: true, phoneNumber: normalizedPhone },
+      });
+    }
 
     try {
       const booking = await createBookingRecord({

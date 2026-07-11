@@ -5,6 +5,10 @@ import { Loader2, MapPin, Trash2 } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { RequireRole } from "@/components/RequireRole";
 import { AddressSearch } from "@/components/AddressSearch";
+import {
+  VerificationBadge,
+  VerificationSection,
+} from "@/components/VerificationSection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -95,10 +99,16 @@ function ProfileInner() {
             <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label>Phone</Label>
+            <div className="flex items-center gap-2">
+              <Label>Phone</Label>
+              <VerificationBadge verified={profile.phoneVerified} />
+            </div>
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
-          <p className="text-sm text-muted-foreground">Email: {profile.email}</p>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Email: {profile.email}</span>
+            <VerificationBadge verified={profile.emailVerified} />
+          </div>
           <p className="text-sm text-muted-foreground">
             {profile._count?.bookings ?? 0} bookings
           </p>
@@ -106,6 +116,28 @@ function ProfileInner() {
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save changes
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Verification (optional)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <VerificationSection
+            channel="phone"
+            target={phone}
+            verified={Boolean(profile.phoneVerified)}
+            label="Phone"
+            onVerified={load}
+          />
+          <VerificationSection
+            channel="email"
+            target={profile.email}
+            verified={Boolean(profile.emailVerified)}
+            label="Email"
+            onVerified={load}
+          />
         </CardContent>
       </Card>
 

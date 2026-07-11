@@ -20,6 +20,19 @@ cookie).
 | POST | `/refresh` | – | `{ refreshToken }` | → `{ token, refreshToken, role, driverId? }` — rotates refresh token |
 | POST | `/logout` | – | `{ refreshToken? }` | Revokes session |
 | GET | `/me` | any | – | → `{ user, role }` |
+| GET | `/config` | – | – | → `{ googleOAuth: { enabled, url }, otp: { debug } }` |
+| POST | `/otp/send` | any | `{ channel: 'phone'\|'email', target }` | 6-digit OTP, 10min expiry; `debugOtp` when `NODE_ENV!=production` or `OTP_DEBUG=true` |
+| POST | `/otp/verify` | any | `{ channel, target, code }` | Marks `phoneVerified` / `emailVerified`; emits notification |
+| GET | `/oauth/google` | – | – | Redirects to Google when configured; `503` stub message otherwise |
+| GET | `/oauth/google/callback` | – | query `code` | Links account by email or creates user; redirects to client `/auth/callback` |
+
+**OTP rate limit:** 3 sends per 15 minutes per target (plus IP ceiling). Delivery uses console stub (no Twilio/SendGrid required).
+
+**Google OAuth env:** `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, optional `GOOGLE_OAUTH_REDIRECT_URI`.
+
+**OTP debug env:** `OTP_DEBUG=true` returns `debugOtp` in send response (also enabled when `NODE_ENV!=production`).
+
+Verification is **optional** — guest booking, login, and core flows never require it.
 
 ## Geo & pricing — `/api/geo`
 
